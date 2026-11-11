@@ -226,3 +226,30 @@ git log --oneline -10
   disabled unless `DEMO_OWNER_SECRET_KEY` and `NEXT_PUBLIC_DEMO_MODE=true`
   are both set.
 
+## Phase 8 — frontend redesign
+
+The owner asked for a redesign based on a marketing reference: a light page
+lit from behind, one vivid accent, a floating navigation bar, a headline built
+around a real number, and a row of figure cards. The information architecture
+did not change; the visual world did, and `DESIGN.md` was rewritten to match.
+
+- The landing page reads the real figures from the contract when it loads:
+  earnings, the number of served reads, the price per read, the number of
+  requests created and the broker fingerprint. There is no invented number and
+  no testimonial; the quote cards hold real outputs (the latest receipt, the
+  contract's own panic text after a revoke, the broker's published key).
+- The app screens moved from a left rail to a floating navigation bar, from
+  hairline rules to white cards with soft layered shadows, and from square
+  buttons to pills.
+- Typography is now Bricolage Grotesque, Instrument Sans and IBM Plex Mono.
+- The colour tokens were renamed and a test now fails when the app uses a
+  colour utility that the theme does not define. That test exists because the
+  rename silently left one chip rendering ink-on-ink.
+- Fixed while redesigning: pill buttons had no vertical padding, prose ran the
+  full width of the page, the navigation overflowed at 768, the mobile menu
+  links did not wrap, and the mobile menu unmounted on click, which cancelled
+  the navigation.
+- The detector findings that remain are deliberate and are recorded in
+  `docs/DESIGN_REVIEW.md`: the violet ambient light and the accent colour come
+  from the reference the owner chose.
+

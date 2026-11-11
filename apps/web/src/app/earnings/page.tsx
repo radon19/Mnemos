@@ -84,7 +84,7 @@ export default function EarningsPage(): React.ReactNode {
       )}
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
-        <section aria-labelledby="balance" className="space-y-6">
+        <section aria-labelledby="balance" className="card space-y-6 px-5 py-5">
           <div>
             <h2 id="balance" className="field-label">
               Unwithdrawn balance
@@ -110,7 +110,7 @@ export default function EarningsPage(): React.ReactNode {
                   setAmount(event.target.value);
                 }}
                 placeholder="0.1"
-                className="min-h-11 border border-rule bg-transparent px-3 outline-none focus:border-ink"
+                className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
               />
             </label>
             <Button
@@ -127,7 +127,7 @@ export default function EarningsPage(): React.ReactNode {
           </form>
         </section>
 
-        <section aria-labelledby="history" className="min-w-0">
+        <section aria-labelledby="history" className="card min-w-0 px-5 py-5">
           <h2 id="history" className="text-title">
             Recent receipts
           </h2>
@@ -143,24 +143,24 @@ export default function EarningsPage(): React.ReactNode {
             />
           ) : null}
           {receipts.data !== undefined && receipts.data !== null && receipts.data.length > 0 ? (
-            <div className="mt-4 border-t border-rule">
+            <div className="mt-2 overflow-hidden">
               <table className="w-full text-left">
                 <caption className="sr-only">Recent receipts on chain</caption>
                 <thead>
                   <tr>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Read
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Agent
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Scope
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Paid
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Receipt hash
                     </th>
                   </tr>
@@ -168,21 +168,21 @@ export default function EarningsPage(): React.ReactNode {
                 <tbody>
                   {receipts.data.map((receipt) => (
                     <tr key={receipt.req_id} className="align-top">
-                      <td className="border-b border-rule py-3 pr-4">
+                      <td className="border-b border-rule px-4 py-3">
                         <span className="numeric text-caption">#{receipt.req_id}</span>
                         <p className="numeric text-caption text-muted">
                           {formatTimestamp(Number(BigInt(receipt.served_ns) / 1_000_000n))}
                         </p>
                       </td>
-                      <td className="border-b border-rule py-3 pr-4">
+                      <td className="border-b border-rule px-4 py-3">
                         <span className="hash text-caption break-all">
                           {truncateAccount(receipt.agent, 8, 4)}
                         </span>
                       </td>
-                      <td className="border-b border-rule py-3 pr-4">
+                      <td className="border-b border-rule px-4 py-3">
                         <span className="hash text-caption">{receipt.scope}</span>
                       </td>
-                      <td className="border-b border-rule py-3 pr-4">
+                      <td className="border-b border-rule px-4 py-3">
                         <span className="numeric text-caption">
                           {formatNear(receipt.price)} NEAR
                         </span>
@@ -199,7 +199,7 @@ export default function EarningsPage(): React.ReactNode {
 
           <div className="mt-8 flex items-center gap-3 border-t border-rule pt-4">
             <StatusMark kind="verified" label="Hash only" />
-            <p className="text-caption text-muted">
+            <p className="max-w-[54ch] text-caption text-muted">
               The chain stores the hash of the request and answer. It cannot reveal the
               note to anybody, including the owner.
             </p>

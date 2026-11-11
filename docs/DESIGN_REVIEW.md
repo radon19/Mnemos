@@ -1,71 +1,93 @@
 # Design review
 
-The web app was built from `PRODUCT.md` and `DESIGN.md`, then put through the
-Impeccable passes the brief requires: shape, craft, audit, critique, harden,
-polish, and the anti-pattern detector. This file records what the detector
-found, what was changed, and the one finding that was kept on purpose.
+Two rounds. The first built the interface from the original design direction.
+The second was a redesign at the owner's request, using a marketing reference
+they supplied: a light page lit from behind, one vivid accent, a floating
+navigation bar, a headline built around a real number, and a row of figure
+cards.
+
+Every screen was checked with the Impeccable detector and with axe-core
+through Playwright at 1440, 768 and 390 pixels, and reviewed as screenshots
+in both themes.
 
 ## How it was checked
 
 ```text
-$ cd apps/web && pnpm exec playwright test e2e/accessibility.spec.ts
-  27 passed (19.2s)
+$ cd apps/web && pnpm exec playwright test
+  36 passed (3.3m)
 ```
 
 Each of the seven screens is checked with axe-core at 1440, 768 and 390
-pixels. The suite also asserts that no screen scrolls sideways and that the
-navigation reaches every screen.
+pixels. The suite also asserts that no screen scrolls sideways, that the
+navigation reaches every screen, and that the owner can sign in, store an
+encrypted note and run the red-team set against a live broker.
 
 ```text
-$ impeccable detect http://127.0.0.1:3000/
-$ impeccable detect http://127.0.0.1:3000/setup
-$ impeccable detect http://127.0.0.1:3000/vault
-$ impeccable detect http://127.0.0.1:3000/grants
-$ impeccable detect http://127.0.0.1:3000/activity
-$ impeccable detect http://127.0.0.1:3000/earnings
-$ impeccable detect http://127.0.0.1:3000/redteam
+$ impeccable detect http://127.0.0.1:3000/          # and the other six screens
 ```
 
-Screenshots were captured at 1440 and 390 in both themes and reviewed.
+## The redesign
 
-## Findings and fixes
+The reference supplied the direction; the product supplied the content. The
+landing page now opens with the owner's real earnings and the real number of
+served reads, both read from the contract when the page loads, and the figure
+cards below it carry the real price per read, the real number of requests
+created and the real broker fingerprint. The quote cards hold real outputs:
+the latest receipt on chain, the contract's own panic text after a revoke, and
+the broker's published key. There is not one invented figure on the page, and
+the copy says where each number comes from.
+
+The app screens moved from a left rail to a floating navigation bar, from
+hairline rules to white cards with soft layered shadows, and from square
+buttons to pills. The information architecture did not change: the same seven
+screens, the same tables, the same evidence.
+
+## Findings and fixes in the redesign round
 
 | Finding | Where | Fix |
 | --- | --- | --- |
-| `kicker-above-heading` | every screen | The mono eyebrow above each title was a generated kicker that repeated the navigation. Removed from `PageHeader` and from the landing page; `DESIGN.md` was updated to match. |
-| `cream-palette` | every screen | The warm paper background was the default "tasteful" surface. The palette moved to a cool archival white (`oklch(0.975 0.004 240)`), which reads as a document. `DESIGN.md` records the change and the reason. |
-| `cramped-padding` | landing, setup | The rule above the example receipt had its rows flush against it. The border moved onto the definition list, which now carries its own inset. Buttons gained vertical padding so 15px text is never flush with their edge. |
-| `low-contrast` | setup, vault, grants, red-team | Disabled buttons were drawn at 40% opacity, which put their labels at 1.2:1. A disabled button now uses the muted ink and the rule colour: still visibly disabled, still readable. |
-| `script-error` (React #418) | setup | The theme script mutated `<html>` before hydration. The root element now carries `suppressHydrationWarning`, which is the intended use for a pre-paint theme class. |
-| horizontal overflow at 768 | setup | The three-column step layout did not fit beside the rail. The layout now only becomes three columns at 1024px, and every grid track uses `minmax(0, 1fr)` so long hashes cannot widen their column. |
-
-The craft floor was also checked by hand: contrast is at least 4.5:1 for body
-text in both themes, the body measure stays inside 54–68 characters, the
-display size is 2.25rem, focus is a 2px ink outline with a 2px offset, and
-there are no cards, gradients, glass, hard shadows, sparklines or emoji.
+| `cramped-padding` | setup, vault, grants | Pill buttons had no vertical padding of their own, so the label sat 0px from the edge of the control. They now carry `py-2`, and the nav links `py-1.5`. |
+| `line-length` | landing, setup, vault, earnings | Prose blocks ran the full width of the page. Every prose block is now measured between 54 and 76 characters. |
+| `label-content-name-mismatch` (axe) | theme toggle | The visible label did not match the accessible name. The name now contains the visible word. |
+| horizontal overflow at 768 | every screen | The navigation bar was too wide beside the content at tablet width. The owner block and the primary action moved to the large breakpoint, and the menu links wrap. |
+| a link that did not navigate | mobile | The disclosure panel was unmounted on click, which removed the link from the document mid-click and cancelled the navigation. The panel now stays mounted and is hidden with `hidden`. |
+| the mobile menu ran off the screen | mobile | The six section links were one row. They wrap. |
+| a token rename left dead classes | grants | The redesign renamed the paper token, and `text-paper` silently became no class, so an active scope chip rendered as ink-on-ink. A script now compares every colour utility used in the app against the theme and fails on an unknown one. |
 
 ## Deliberate choices
 
+**The violet ambient light.** The detector calls a purple gradient background
+an AI default and a radial spotlight glow decoration. Both are true in
+general, and both are the point of the reference the owner chose. The light is
+a fixed layer behind the page at 30–38% alpha; it carries no meaning, it
+makes a white page read as lit, and the accent colour is the only place the
+same hue appears. This is a user-directed decision, recorded here rather than
+silently applied.
+
+**One accent, one status colour.** Violet is the brand. Green is reserved for
+the verified state, because "verified" is a claim about a signature and a TEE
+attestation, not a decoration. Red is destructive. Nothing else is coloured.
+
+**The body face dominates the app screens.** The detector notes that the
+interface sans carries 45–70% of the text. In the app screens that is
+correct: the display face carries every heading and every headline figure,
+the mono carries every hash, account id, amount and timestamp, and what is
+left is body copy and small data labels, where a geometric display face would
+be wrong.
+
+**The numbered setup steps.** The detector flags the small `01`–`04` labels
+beside the four setup steps as an advisory. The steps are an ordered procedure
+and the numbers carry the order, which is the information the reader needs.
+
 **One authored moment.** The only animation is a receipt arriving in the
-activity ledger: 120ms, 4px rise, exponential ease-out. It runs on newly
-arrived rows only, and `prefers-reduced-motion` reduces it to nothing. There
-is no page-load choreography and no ambient animation.
+activity ledger. The reference's floating cards and drifting glow are static
+here: motion would fight the ledger, which is a record of what happened.
 
-**The revoke confirmation is a dialog.** It asks for a typed word, so it needs
-protected focus and an explicit dismissal. A task without either would be a
-dialog too often; this one has both.
+## Reasoned exceptions
 
-**A 1px left rule on notices.** The craft floor bans a coloured border above
-1px on callouts. The notice keeps a one-pixel rule in the tone colour and
-carries the message in the surface tint.
-
-## Reasoned exception
-
-**`numbered-section-labels` (advisory) on the setup screen.** The detector
-flags the small `01`–`04` numbers beside the four setup steps. The craft floor
-allows section numbers "unless the sequence itself carries information the
-reader needs", and here the sequence is the point: the brief asks for a setup
-screen where each step shows its own success or failure state, and the numbers
-make the order explicit. They are the only numbers of their kind in the app.
-The finding is advisory, it never blocks, and the steps would be less clear
-without them.
+| Finding | Why it stays |
+| --- | --- |
+| `ai-color-palette` | The owner asked for this reference. The violet is deliberate, not a default. |
+| `radial-spotlight-glow` | Same. The ambient layer is fixed, low alpha, and carries no meaning. |
+| `overused-font` | A data interface is mostly text; the display face is used where type has to carry weight. |
+| `numbered-section-labels` (advisory) | The setup steps are a sequence and the numbers are the order. |

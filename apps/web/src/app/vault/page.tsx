@@ -116,14 +116,14 @@ export default function VaultPage(): React.ReactNode {
       ) : null}
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
-        <section aria-labelledby="add-note" className="space-y-4">
+        <section aria-labelledby="add-note" className="card space-y-4 px-5 py-5">
           <h2 id="add-note" className="text-title">
             Add a note
           </h2>
 
           {unlocked ? null : (
             <form
-              className="space-y-3 border border-rule p-4"
+              className="space-y-3 rounded-2xl bg-sunken p-4"
               onSubmit={(event) => {
                 event.preventDefault();
                 if (passphraseInput.length > 0) {
@@ -145,7 +145,7 @@ export default function VaultPage(): React.ReactNode {
                   onChange={(event) => {
                     setPassphraseInput(event.target.value);
                   }}
-                  className="min-h-11 border border-rule bg-transparent px-3 outline-none focus:border-ink"
+                  className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
                 />
               </label>
               <Button type="submit" tone="quiet" disabled={passphraseInput.length === 0}>
@@ -168,7 +168,7 @@ export default function VaultPage(): React.ReactNode {
                 onChange={(event) => {
                   setScope(event.target.value);
                 }}
-                className="min-h-11 border border-rule bg-transparent px-3 outline-none focus:border-ink"
+                className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
               >
                 {SCOPES.map((name) => (
                   <option key={name} value={name}>
@@ -187,7 +187,7 @@ export default function VaultPage(): React.ReactNode {
                   setText(event.target.value);
                 }}
                 placeholder="My flight to Lisbon is on 14 March at 09:15."
-                className="border border-rule bg-transparent p-3 text-body outline-none focus:border-ink"
+                className="rounded-xl border border-rule bg-sunken p-3.5 text-body outline-none focus:border-accent"
               />
             </label>
 
@@ -219,7 +219,7 @@ export default function VaultPage(): React.ReactNode {
           )}
         </section>
 
-        <section aria-labelledby="notes" className="min-w-0">
+        <section aria-labelledby="notes" className="card min-w-0 px-5 py-5">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h2 id="notes" className="text-title">
               Notes in {scope}
@@ -245,21 +245,21 @@ export default function VaultPage(): React.ReactNode {
           ) : null}
 
           {items.data !== undefined && items.data.items.length > 0 ? (
-            <div className="mt-4 border-t border-rule">
+            <div className="mt-2 overflow-hidden">
               <table className="w-full text-left">
                 <caption className="sr-only">Encrypted notes in the {scope} scope</caption>
                 <thead>
                   <tr>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Item
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Content hash
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Stored
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       <span className="sr-only">Actions</span>
                     </th>
                   </tr>
@@ -267,13 +267,13 @@ export default function VaultPage(): React.ReactNode {
                 <tbody>
                   {items.data.items.map((item) => (
                     <tr key={item.id} className="align-top">
-                      <td className="border-b border-rule py-3 pr-4">
+                      <td className="border-b border-rule px-4 py-3">
                         <span className="hash text-caption break-all">{item.id}</span>
                       </td>
-                      <td className="border-b border-rule py-3 pr-4">
+                      <td className="border-b border-rule px-4 py-3">
                         <Hash value={item.content_hash} label="Content hash" />
                       </td>
-                      <td className="border-b border-rule py-3 pr-4">
+                      <td className="border-b border-rule px-4 py-3">
                         <span className="numeric text-caption text-muted">
                           {formatTimestamp(item.created_at)}
                         </span>
@@ -296,7 +296,7 @@ export default function VaultPage(): React.ReactNode {
             </div>
           ) : null}
 
-          <p className="mt-6 text-caption text-muted">
+          <p className="mt-6 max-w-[56ch] text-caption text-muted">
             The broker never receives the note in the clear. It receives ciphertext, a
             nonce, two wrapped keys and a hash it can check without decrypting.
           </p>

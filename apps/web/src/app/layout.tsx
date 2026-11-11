@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Newsreader, Public_Sans } from "next/font/google";
+import { Bricolage_Grotesque, IBM_Plex_Mono, Instrument_Sans } from "next/font/google";
 
 import { AppShell } from "@/components/AppShell";
 import { QueryProvider } from "@/lib/query";
@@ -7,16 +7,16 @@ import { SessionProvider } from "@/lib/session";
 
 import "./globals.css";
 
-const newsreader = Newsreader({
+const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
-  variable: "--font-newsreader",
+  variable: "--font-bricolage",
   display: "swap",
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const publicSans = Public_Sans({
+const instrument = Instrument_Sans({
   subsets: ["latin"],
-  variable: "--font-public-sans",
+  variable: "--font-instrument",
   display: "swap",
   weight: ["400", "500", "600"],
 });
@@ -49,12 +49,13 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${newsreader.variable} ${publicSans.variable} ${plexMono.variable}`}
+      className={`${bricolage.variable} ${instrument.variable} ${plexMono.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body className="bg-paper text-ink antialiased">
+      <body className="bg-canvas text-ink antialiased">
+        <div className="ambient" aria-hidden="true" />
         <SessionProvider>
           <QueryProvider>
             <AppShell>{children}</AppShell>

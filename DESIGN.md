@@ -1,127 +1,148 @@
 # Mnemos — Design Direction
 
-## Concept: the ledger instrument
+> This direction replaces the first one (a left rail of hairline rules over
+> archival paper). It was rewritten after the owner asked for a redesign based
+> on a marketing reference they supplied: a light page lit from behind, one
+> vivid accent, a floating navigation bar, a headline built around a real
+> number, and a row of figure cards. The product truth did not change: the
+> evidence is still the content, and every figure on the page is read from the
+> chain when the page loads.
 
-Mnemos should feel like a calm, exact instrument for chain of custody. The
-interface is a ledger, not a dashboard. Evidence leads: receipt hashes,
-attestation fields, prices, scopes, caps, timestamps. Decoration is subordinate
-to legibility and proof.
+## Concept: a lit ledger
 
-The reference objects are a laboratory notebook, a bank ledger and a signed
-receipt. Not a crypto app, not a SaaS template, not a marketing site.
+The page is a sheet of paper on a lit desk. The light comes from behind the
+sheet — a violet ambient glow bleeding in from the edges — and the interface
+sits on top of it as white cards with soft, layered shadows. Evidence is
+printed on those cards: receipt hashes, attestation fields, prices, scopes,
+timestamps. Nothing floats without a reason.
+
+The reference offered a big number and a row of country cards. Mnemos uses the
+same move with the same discipline: the headline number is the owner's real
+earnings, and the cards are the system's real figures.
 
 ## Typography
 
 | Role | Face | Why |
 | --- | --- | --- |
-| Display / headings | **Newsreader** | A contemporary text serif with editorial authority. Gives headings a documentary register; distinguishes Mnemos from technical dashboards without becoming decorative. |
-| UI / body | **Public Sans** | A neutral, highly legible civic sans with an unusually clear lowercase. It stays out of the way of dense tables and reads well at 13–15px. |
-| Evidence / mono | **IBM Plex Mono** | Hashes, account IDs, prices and timestamps need unambiguous glyphs and tabular numerals. Plex Mono's slightly humanist forms keep it from feeling like a terminal costume. |
+| Display / headings | **Bricolage Grotesque** | A variable grotesque with a slightly off-axis character. It gives a headline presence without the flatness of a geometric sans, and it holds its own next to a mono. |
+| UI / body | **Instrument Sans** | A neutral, highly legible sans with clear lowercase shapes. It stays quiet in dense tables and reads well at 13–15px. |
+| Evidence / mono | **IBM Plex Mono** | Hashes, account ids, prices and timestamps need unambiguous glyphs and tabular numerals. |
 
-All three are self-hosted through `next/font/google` (downloaded at build time,
-served from the app origin). Headings use Newsreader at optical sizes; body uses
-Public Sans; all numeric data uses IBM Plex Mono with `font-variant-numeric:
-tabular-nums`. No Inter, Roboto, Arial, system defaults, Poppins or Space Grotesk.
+All three are self-hosted through `next/font/google`. Amounts and counts use
+IBM Plex Mono with `font-variant-numeric: tabular-nums`. No Inter, Roboto,
+Arial, system defaults, Poppins or Space Grotesk.
+
+The scale is deliberately small: the display size is reserved for the landing
+headline and the screen titles step down to 1.75rem, because the app screens
+are dense and the type has to stay out of the way of the data.
 
 ## Colour
 
-OKLCH tokens, neutral-dominant. One restrained accent is reserved for the
-verified state; one for destructive actions. Colour never carries meaning alone:
-every status also has a word and a shape.
+OKLCH tokens. The canvas is a near-white with a faint violet cast, the
+surfaces are pure white, and one accent carries the brand. Status colour is
+never the only signal: every status also has a word and a mark.
 
 ### Light
 
 ```
---paper       oklch(0.975 0.004 240)   archival white, faintly cool
---surface     oklch(0.945 0.006 240)   recessed rows
---ink         oklch(0.22 0.012 250)    primary text
---muted       oklch(0.50 0.014 250)    secondary text (5.58:1 on paper)
---rule        oklch(0.86 0.008 245)    hairline rules
---verified    oklch(0.43 0.095 160)   verified ink
---verified-bg oklch(0.94 0.025 160)   verified tint
---destructive oklch(0.48 0.145 30)    destructive ink
---destructive-bg oklch(0.95 0.03 30)  destructive tint
+--canvas     oklch(0.985 0.004 285)   near-white, faintly violet
+--surface   oklch(1 0 0)              cards
+--sunken     oklch(0.968 0.006 285)   recessed fields
+--ink        oklch(0.19 0.02 285)      primary text
+--muted      oklch(0.52 0.022 285)    secondary text
+--rule       oklch(0.91 0.008 285)    hairlines
+--accent     oklch(0.55 0.24 292)     brand accent, the headline figure
+--accent-ink oklch(0.46 0.22 292)    accent text on a light tint
+--accent-soft oklch(0.955 0.028 292) accent tint
+--verified   oklch(0.52 0.14 158)    verified state
+--destructive oklch(0.54 0.19 25)     destructive state
 ```
 
 ### Dark
 
 ```
---paper       oklch(0.16 0.008 250)
---surface     oklch(0.205 0.010 250)
---ink         oklch(0.93 0.006 240)
---muted       oklch(0.70 0.012 245)
---rule        oklch(0.30 0.010 245)
---verified    oklch(0.80 0.105 160)
---verified-bg oklch(0.24 0.035 160)
---destructive oklch(0.74 0.130 30)
---destructive-bg oklch(0.26 0.045 30)
+--canvas     oklch(0.145 0.016 285)
+--surface   oklch(0.195 0.02 285)
+--sunken     oklch(0.225 0.022 285)
+--ink        oklch(0.96 0.006 285)
+--muted      oklch(0.72 0.024 285)
+--rule       oklch(0.29 0.022 285)
+--accent     oklch(0.74 0.185 292)
+--verified   oklch(0.82 0.15 158)
+--destructive oklch(0.72 0.16 25)
 ```
 
-Both themes are designed separately, not inverted. The dark theme is a dim
-reading surface, not neon on black. Body text and interactive labels meet WCAG
-AA (4.5:1) against their surfaces; large headings meet 3:1. Focus is a 2px ink
-outline with a 2px offset, visible in both themes.
+Both themes are designed separately. The dark theme is a dim reading surface,
+not neon on black. Body text meets WCAG AA (4.5:1) against its surface, large
+headings meet 3:1, and focus is a 2px accent outline with a 3px offset.
 
-The paper is a cool archival white rather than a warm cream. A cream page
-background is the default "tasteful" surface and reads as decoration; a faintly
-cool white reads as a document, which is what this interface is. The warmth
-that remains lives in the type, not in the background.
+The violet ambient light is a fixed layer behind the page: three radial
+gradients bleeding in from the top corners and the bottom centre, at 30–38%
+alpha. It is decoration with a job — it makes a white page feel lit rather
+than blank — and it never carries meaning.
 
 ## Layout
 
-- A fixed left rail (208px) holds the wordmark, the ledger navigation and the
-  owner identity. Content occupies a 12-column grid with a 1180px maximum.
-- **Table-first.** Activity, grants, earnings history and vault items are tables
-  or definition lists with hairline rules. No card grids, no three-column feature
-  rows, no centered hero over a gradient.
-- Deliberate asymmetry: forms use a narrow label column (4 cols) against a wide
-  field column (8 cols). Detail views put a large hash in a wide right column.
-- Whitespace is generous but not empty: section spacing 48–72px, row padding
-  12–16px.
-- On mobile the rail becomes a top bar with a disclosure menu; tables become
-  definition lists with labels above values. No horizontal scrolling for primary
-  content; hashes wrap.
+- A floating navigation bar sits at the top of the viewport: a white pill with
+  a hairline border and a soft shadow, holding the wordmark, the section links
+  and one dark pill for the primary action. It is sticky.
+- Below 1024px the bar collapses: the section links move into a disclosure
+  panel under the bar, and the owner block moves with them.
+- The landing page centres its hero, then opens into wide grids: four figure
+  cards, three quote cards, three step cards, three limit cards.
+- The app screens are left aligned and dense. A screen title at 1.75rem, one
+  sentence of orientation, then cards that hold forms, tables and evidence.
+- Prose is measured: 54–76 characters per line, never the full width.
+- Tables sit inside cards with hairline rows. No zebra striping.
+- On mobile the grids collapse to one column and the tables become labelled
+  rows. Nothing scrolls sideways at 390px.
 
 ## Components
 
-- **Status mark:** a 7px square (filled for verified/served, hollow for pending,
-  crossed for revoked/refused) plus a word in mono. Never colour alone.
-- **Hash:** mono, middle-truncated with `…`, a copy control, and a title with the
-  full value. Hashes are content, not fine print.
-- **Ledger table:** header in small caps mono; rows separated by 1px rules; no
-  zebra striping; hover undims a row's actions.
-- **Screen opening:** a serif title and one sentence of orientation. The screen
-  name is already in the navigation, so it is not repeated above the title.
-- **Grant form:** inline, labelled, with live computed price in NEAR and a plain
-  explanation of what each limit does. Revoke is a separate, deliberate action
-  with a typed confirmation.
-- **Empty state:** one sentence explaining what to do next, plus the action.
-- **Evidence block:** definition list of attestation fields, chat id, model,
-  signing address, verification result, timestamps, explorer link.
+- **Wordmark:** a rounded ink square with a lighter band at the top — a ledger
+  sheet seen from above.
+- **Figure card:** a label, a large tabular number, and a note that says where
+  the number came from. A figure that cannot be read says so instead of
+  showing an example.
+- **Quote card:** a real output of the system with its source named. There are
+  no testimonials in this product.
+- **Status mark:** a 7px square (filled for served, hollow for pending,
+  outlined for refused) plus a word in mono. Never colour alone.
+- **Hash:** mono, middle-truncated with `…`, the full value on hover and in
+  the accessible name. Hashes are content, not fine print.
+- **Pill button:** rounded, 40px tall, ink fill for primary, hairline for
+  quiet, destructive ink for revoke. A disabled button keeps its label legible.
+- **Empty state:** one sentence explaining what to do next, centred in its
+  card.
+- **Evidence block:** a definition list of attestation fields, chat id, signing
+  address, TCB status and the explorer link.
 
 ## Motion
 
-Motion only communicates state change: a receipt row arriving (120ms fade and
-4px rise), a grant being revoked (160ms strike-through and status swap), a copy
-confirmation (100ms). No parallax, no ambient animation, no page-load choreography.
-`prefers-reduced-motion: reduce` removes transforms and reduces durations to 0ms.
+One authored moment: a receipt arriving in the activity ledger, 140ms, a 6px
+rise with an exponential ease-out. Rows that were already known stay still.
+`prefers-reduced-motion` reduces every duration to nothing. There is no
+page-load choreography and no ambient animation.
 
 ## Copy
 
 Specific, plain, declarative. No exclamation marks, no emojis, no lorem ipsum.
-Errors state what happened, why, and what to do next. Empty states teach the next
-action. Security claims are precise about what is and is not guaranteed.
+Errors state what happened, why, and what to do next. Empty states teach the
+next action. Security claims are precise about what is and is not guaranteed.
+
+The landing page never shows an invented figure. Every number is read from
+`mnemos-contract-76badc8e.testnet` when the page loads, and the page says so.
 
 ## Banned
 
-Purple-to-blue gradients, glassmorphism, glowing borders, neon on dark, emoji or
-sparkle icons, identical rounded cards with soft shadows, icon-in-circle feature
-tiles, fake testimonials or logos, stock illustrations, gratuitous blur, default
-Tailwind palette, centered marketing hero.
+Neon on dark, glassmorphism as decoration, emoji or sparkle icons, identical
+rounded cards standing in for content, icon-in-circle feature tiles, fake
+testimonials, fake figures, stock illustrations, gradient text, hard offset
+shadows, sparkle icons, centred marketing copy without a real number.
 
 ## Accessibility and responsiveness
 
-Semantic landmarks (`header`, `nav`, `main`, `section` with accessible names),
-visible focus, full keyboard operation, labelled controls, `aria-live="polite"`
-for the activity stream, colour-independent status, 4.5:1 text contrast. Verified
-at 390, 768 and 1440 widths and wider. Tap targets at least 44px on mobile.
+Semantic landmarks, visible focus, full keyboard operation, labelled
+controls, `aria-live` for the activity stream, colour-independent status, 4.5:1
+text contrast. Verified at 390, 768 and 1440 pixels with axe-core and
+Playwright: 36 tests, no violations.

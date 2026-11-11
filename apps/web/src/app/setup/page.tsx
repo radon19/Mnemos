@@ -24,7 +24,7 @@ function Step({ index, title, status, children }: StepProps): React.ReactNode {
     status === "done" ? "Ready" : status === "failed" ? "Failed" : status === "active" ? "In progress" : "Pending";
   const kind = status === "done" ? "verified" : status === "failed" ? "refused" : "pending";
   return (
-    <section className="grid gap-3 border-b border-rule py-6 sm:grid-cols-[3rem_minmax(0,1fr)] sm:gap-6 lg:grid-cols-[3rem_minmax(0,20rem)_minmax(0,1fr)]">
+    <section className="card grid gap-3 px-5 py-5 sm:grid-cols-[3rem_minmax(0,1fr)] sm:gap-5 lg:grid-cols-[3rem_minmax(0,18rem)_minmax(0,1fr)]">
       <p className="field-label pt-1">{index}</p>
       <div>
         <h2 className="text-lede text-ink">{title}</h2>
@@ -32,7 +32,7 @@ function Step({ index, title, status, children }: StepProps): React.ReactNode {
           <StatusMark kind={kind} label={label} />
         </div>
       </div>
-      <div className="min-w-0">{children}</div>
+      <div className="min-w-0 max-w-[54ch]">{children}</div>
     </section>
   );
 }
@@ -88,7 +88,7 @@ export default function SetupPage(): React.ReactNode {
         </Notice>
       )}
 
-      <div className="border-t border-rule">
+      <div className="space-y-3">
         <Step
           index="01"
           title="Wallet"
@@ -144,9 +144,9 @@ export default function SetupPage(): React.ReactNode {
               rebuild the app.
             </Notice>
           ) : (
-            <dl className="grid grid-cols-1 gap-x-8 sm:grid-cols-[10rem_minmax(0,1fr)]">
-              <dt className="field-label border-b border-rule py-2">Contract</dt>
-              <dd className="border-b border-rule py-2">
+            <dl className="grid grid-cols-1 gap-x-8 rounded-2xl bg-sunken px-5 sm:grid-cols-[10rem_minmax(0,1fr)]">
+              <dt className="field-label border-b border-rule py-3 first:border-t">Contract</dt>
+              <dd className="border-b border-rule py-3">
                 <a
                   className="hash break-all underline decoration-rule underline-offset-4 hover:text-ink"
                   href={`${explorerBase}/address/${contractId}`}
@@ -156,20 +156,20 @@ export default function SetupPage(): React.ReactNode {
                   {contractId}
                 </a>
               </dd>
-              <dt className="field-label border-b border-rule py-2">Network</dt>
-              <dd className="border-b border-rule py-2">
+              <dt className="field-label border-b border-rule py-3 first:border-t">Network</dt>
+              <dd className="border-b border-rule py-3">
                 <span className="hash">{nearNetwork}</span>
               </dd>
-              <dt className="field-label border-b border-rule py-2">Contract owner</dt>
-              <dd className="border-b border-rule py-2">
+              <dt className="field-label border-b border-rule py-3 first:border-t">Contract owner</dt>
+              <dd className="border-b border-rule py-3">
                 {config.data === undefined || config.data === null ? (
                   <span className="text-muted">reading…</span>
                 ) : (
                   <span className="hash break-all">{config.data.owner}</span>
                 )}
               </dd>
-              <dt className="field-label border-b border-rule py-2">Paused</dt>
-              <dd className="border-b border-rule py-2">
+              <dt className="field-label border-b border-rule py-3 first:border-t">Paused</dt>
+              <dd className="border-b border-rule py-3">
                 {config.data === undefined || config.data === null ? (
                   <span className="text-muted">reading…</span>
                 ) : config.data.paused ? (
@@ -199,9 +199,9 @@ export default function SetupPage(): React.ReactNode {
               stores the same value. If they differ, the browser refuses to encrypt
               anything for this broker.
             </p>
-            <dl className="grid grid-cols-1 gap-x-8 sm:grid-cols-[10rem_minmax(0,1fr)]">
-              <dt className="field-label border-b border-rule py-2">Served by the broker</dt>
-              <dd className="border-b border-rule py-2">
+            <dl className="grid grid-cols-1 gap-x-8 rounded-2xl bg-sunken px-5 sm:grid-cols-[10rem_minmax(0,1fr)]">
+              <dt className="field-label border-b border-rule py-3 first:border-t">Served by the broker</dt>
+              <dd className="border-b border-rule py-3">
                 {identity.isError ? (
                   <span className="text-destructive">
                     the broker could not be reached: {describeError(identity.error)}
@@ -212,8 +212,8 @@ export default function SetupPage(): React.ReactNode {
                   <Hash value={identity.data.fingerprint} head={12} tail={8} label="Broker fingerprint" />
                 )}
               </dd>
-              <dt className="field-label border-b border-rule py-2">Registered on chain</dt>
-              <dd className="border-b border-rule py-2">
+              <dt className="field-label border-b border-rule py-3 first:border-t">Registered on chain</dt>
+              <dd className="border-b border-rule py-3">
                 {onChainBroker.data === undefined || onChainBroker.data === null ? (
                   <span className="text-muted">
                     {onChainBroker.isError ? "could not read the contract" : "reading…"}
@@ -227,8 +227,8 @@ export default function SetupPage(): React.ReactNode {
                   />
                 )}
               </dd>
-              <dt className="field-label border-b border-rule py-2">Result</dt>
-              <dd className="border-b border-rule py-2">
+              <dt className="field-label border-b border-rule py-3 first:border-t">Result</dt>
+              <dd className="border-b border-rule py-3">
                 {fingerprintMatches ? (
                   <StatusMark kind="verified" label="Fingerprints match" />
                 ) : onChainBroker.isError ? (
@@ -276,7 +276,7 @@ export default function SetupPage(): React.ReactNode {
                     onChange={(event) => {
                       setPassphrase(event.target.value);
                     }}
-                    className="min-h-11 border border-rule bg-transparent px-3 text-body outline-none focus:border-ink"
+                    className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
                   />
                 </label>
                 <Button type="submit" disabled={passphrase.length === 0}>

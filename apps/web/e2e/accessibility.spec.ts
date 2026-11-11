@@ -46,17 +46,17 @@ test("the page does not scroll sideways at 390 pixels", async ({ page }) => {
 });
 
 test("the navigation reaches every screen from the rail", async ({ page }) => {
+  // Six client-side navigations, each opening the menu on a narrow screen.
+  test.setTimeout(90_000);
   await page.goto("/");
-  const nav = page.getByRole("navigation", { name: "Sections" }).first();
-  if (!(await nav.isVisible())) {
-    await page.getByRole("button", { name: "Menu" }).click();
-  }
   for (const screen of SCREENS.slice(1)) {
-    if (!(await nav.isVisible())) {
+    const navs = page.getByRole("navigation", { name: "Sections" });
+    if ((await navs.filter({ visible: true }).count()) === 0) {
       await page.getByRole("button", { name: "Menu" }).click();
     }
-    await nav.getByRole("link", { name: new RegExp(screen.name, "i") }).click();
-    await expect(page).toHaveURL(new RegExp(`${screen.path}$`));
+    const visible = page.getByRole("navigation", { name: "Sections" }).filter({ visible: true });
+    await visible.getByRole("link", { name: new RegExp(screen.name, "i") }).click();
+    await expect(page).toHaveURL(new RegExp(`${screen.path}$`), { timeout: 15_000 });
     await expect(page.locator("h1")).toBeVisible();
   }
 });

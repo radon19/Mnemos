@@ -8,19 +8,19 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useSession } from "@/lib/session";
 import { truncateAccount } from "@/lib/format";
 
-const NAV: { href: string; label: string; note: string }[] = [
-  { href: "/setup", label: "Setup", note: "wallet, contract, unlock" },
-  { href: "/vault", label: "Vault", note: "encrypted notes by scope" },
-  { href: "/grants", label: "Grants", note: "who may read, and for how long" },
-  { href: "/activity", label: "Activity", note: "receipts for every read" },
-  { href: "/earnings", label: "Earnings", note: "balance and withdrawals" },
-  { href: "/redteam", label: "Red-team", note: "attempted memory extraction" },
+const NAV: { href: string; label: string }[] = [
+  { href: "/setup", label: "Setup" },
+  { href: "/vault", label: "Vault" },
+  { href: "/grants", label: "Grants" },
+  { href: "/activity", label: "Activity" },
+  { href: "/earnings", label: "Earnings" },
+  { href: "/redteam", label: "Red-team" },
 ];
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }): React.ReactNode {
   const pathname = usePathname();
   return (
-    <ul>
+    <ul className="flex flex-wrap items-center gap-1">
       {NAV.map((item) => {
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
@@ -29,14 +29,13 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }): React.ReactNode 
               href={item.href}
               {...(onNavigate === undefined ? {} : { onClick: onNavigate })}
               aria-current={active ? "page" : undefined}
-              className={`block border-l-2 py-2 pl-3 pr-2 transition-colors ${
+              className={`inline-flex min-h-9 items-center rounded-full px-3.5 py-1.5 text-caption transition-colors ${
                 active
-                  ? "border-ink text-ink"
-                  : "border-transparent text-muted hover:border-rule hover:text-ink"
+                  ? "bg-sunken text-ink"
+                  : "text-muted hover:bg-sunken hover:text-ink"
               }`}
             >
-              <span className="field-label block">{item.label}</span>
-              <span className="mt-0.5 hidden text-caption text-muted lg:block">{item.note}</span>
+              {item.label}
             </Link>
           </li>
         );
@@ -49,17 +48,21 @@ function OwnerBlock(): React.ReactNode {
   const { status, account, demo, signIn, signOut } = useSession();
   if (status === "signed-in" && account !== null) {
     return (
-      <div className="space-y-2">
-        <p className="field-label">Owner</p>
-        <p className="hash truncate text-caption text-ink" title={account}>
-          {truncateAccount(account, 10, 6)}
-        </p>
+      <div className="flex items-center gap-3">
+        <span
+          className="hash hidden max-w-[10rem] truncate text-caption text-muted sm:inline"
+          title={account}
+        >
+          {truncateAccount(account, 8, 5)}
+        </span>
         {demo ? (
-          <p className="field-label text-destructive">Local demo signer</p>
+          <span className="hidden rounded-full bg-accent-soft px-2.5 py-1 text-micro text-accent-ink md:inline">
+            Demo signer
+          </span>
         ) : null}
         <button
           type="button"
-          className="field-label underline decoration-rule underline-offset-4 hover:text-ink"
+          className="rounded-full border border-rule px-3 py-1.5 text-caption text-muted transition-colors hover:border-ink hover:text-ink"
           onClick={() => {
             void signOut();
           }}
@@ -70,97 +73,101 @@ function OwnerBlock(): React.ReactNode {
     );
   }
   return (
-    <div className="space-y-2">
-      <p className="field-label">Owner</p>
-      <p className="text-caption text-muted">Not signed in</p>
-      <button
-        type="button"
-        className="field-label underline decoration-rule underline-offset-4 hover:text-ink"
-        onClick={() => {
-          void signIn();
-        }}
-      >
-        Connect wallet
-      </button>
-    </div>
+    <button
+      type="button"
+      className="rounded-full border border-rule px-4 py-2 text-caption text-ink transition-colors hover:border-ink"
+      onClick={() => {
+        void signIn();
+      }}
+    >
+      Connect wallet
+    </button>
   );
 }
 
 export function AppShell({ children }: { children: React.ReactNode }): React.ReactNode {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { account } = useSession();
 
   return (
-    <div className="min-h-dvh bg-paper text-ink">
+    <div className="min-h-dvh">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:border focus:border-ink focus:bg-paper focus:px-3 focus:py-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-canvas"
       >
         Skip to content
       </a>
-      <div className="flex">
-        <aside className="sticky top-0 hidden h-dvh w-[208px] shrink-0 flex-col justify-between border-r border-rule px-4 py-6 md:flex">
-          <div>
-            <Link href="/" className="block">
-              <span className="font-display text-[1.375rem] leading-none tracking-tight">
-                Mnemos
-              </span>
-              <span className="field-label mt-1 block">Ledger of reads</span>
-            </Link>
-            <nav aria-label="Sections" className="mt-8">
-              <NavLinks />
-            </nav>
-          </div>
-          <div className="space-y-4">
+
+      <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5 sm:pt-4">
+        <div className="mx-auto flex max-w-[1180px] items-center gap-3 rounded-full border border-rule bg-surface px-3 py-2 shadow-[var(--shadow-card)] sm:px-4">
+          <Link href="/" className="flex items-center gap-2.5 pr-1">
+            <span className="mark" aria-hidden="true" />
+            <span className="font-display text-[1.0625rem] font-semibold tracking-tight">
+              Mnemos
+            </span>
+          </Link>
+
+          <nav aria-label="Sections" className="hidden md:block">
+            <NavLinks />
+          </nav>
+
+          <div className="ml-auto flex items-center gap-2">
+            <div className="hidden lg:block">
+              <OwnerBlock />
+            </div>
             <ThemeToggle />
+            <Link
+              href="/setup"
+              className="hidden rounded-full bg-ink px-4 py-2 text-caption text-canvas transition-opacity hover:opacity-90 lg:inline-flex"
+            >
+              Open the ledger
+            </Link>
+            <button
+              type="button"
+              aria-expanded={menuOpen}
+              aria-controls="mobile-nav"
+              className="rounded-full border border-rule px-3 py-1.5 text-caption text-ink lg:hidden"
+              onClick={() => {
+                setMenuOpen(!menuOpen);
+              }}
+            >
+              Menu
+            </button>
+          </div>
+        </div>
+
+        {/* The panel stays mounted when it is closed: unmounting it would
+            remove the link from the document during the click and cancel the
+            navigation. */}
+        <div
+          id="mobile-nav"
+          hidden={!menuOpen}
+          className="mx-auto mt-2 max-w-[1180px] rounded-[var(--radius-card)] border border-rule bg-surface p-4 shadow-[var(--shadow-card)] lg:hidden"
+        >
+          <nav aria-label="Sections">
+            <NavLinks
+              onNavigate={() => {
+                setMenuOpen(false);
+              }}
+            />
+          </nav>
+          <div className="mt-4 border-t border-rule pt-4">
             <OwnerBlock />
           </div>
-        </aside>
-
-        <div className="min-w-0 flex-1">
-          <header className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3 md:hidden">
-            <Link href="/" className="font-display text-[1.25rem] leading-none">
-              Mnemos
-            </Link>
-            <div className="flex items-center gap-3">
-              <span className="hash text-caption text-muted">
-                {account === null ? "signed out" : truncateAccount(account, 6, 4)}
-              </span>
-              <ThemeToggle />
-              <button
-                type="button"
-                aria-expanded={menuOpen}
-                aria-controls="mobile-nav"
-                className="field-label border border-rule px-2 py-1"
-                onClick={() => {
-                  setMenuOpen(!menuOpen);
-                }}
-              >
-                Menu
-              </button>
-            </div>
-          </header>
-          {menuOpen ? (
-            <nav
-              id="mobile-nav"
-              aria-label="Sections"
-              className="border-b border-rule bg-paper px-4 py-3 md:hidden"
-            >
-              <NavLinks
-                onNavigate={() => {
-                  setMenuOpen(false);
-                }}
-              />
-              <div className="mt-4">
-                <OwnerBlock />
-              </div>
-            </nav>
-          ) : null}
-          <main id="main" className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-8 sm:py-12">
-            {children}
-          </main>
         </div>
-      </div>
+      </header>
+
+      <main id="main" className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6 sm:py-12">
+        {children}
+      </main>
+
+      <footer className="mx-auto w-full max-w-[1180px] px-4 pb-10 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-6 text-caption text-muted">
+          <p>
+            Mnemos — user-owned AI memory with metered, revocable access on NEAR.
+          </p>
+          <p className="numeric">MIT licensed · built during the hackathon window</p>
+        </div>
+      </footer>
     </div>
   );
 }

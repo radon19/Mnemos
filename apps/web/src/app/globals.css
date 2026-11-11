@@ -1,68 +1,90 @@
 @import "tailwindcss";
 
-/* Mnemos is a ledger, not a dashboard: neutral paper, hairline rules, one
-   accent for the verified state and one for destructive actions. Both themes
-   are designed separately; the dark theme is a dim reading surface. */
+/* Mnemos is a ledger with a soft light behind it. The canvas is near-white
+   with a violet ambient glow at the edges, the surfaces are white cards with
+   soft layered shadows, and one accent carries the brand. Colour never
+   carries meaning alone: every status also has a word and a shape. */
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --paper: oklch(0.975 0.004 240);
-  --surface: oklch(0.945 0.006 240);
-  --ink: oklch(0.22 0.012 250);
-  --muted: oklch(0.5 0.014 250);
-  --rule: oklch(0.86 0.008 245);
-  --verified: oklch(0.43 0.095 160);
-  --verified-bg: oklch(0.94 0.025 160);
-  --destructive: oklch(0.48 0.145 30);
-  --destructive-bg: oklch(0.95 0.03 30);
+  --canvas: oklch(0.985 0.004 285);
+  --surface: oklch(1 0 0);
+  --surface-sunken: oklch(0.968 0.006 285);
+  --ink: oklch(0.19 0.02 285);
+  --muted: oklch(0.52 0.022 285);
+  --rule: oklch(0.91 0.008 285);
+  --accent: oklch(0.55 0.24 292);
+  --accent-ink: oklch(0.46 0.22 292);
+  --accent-soft: oklch(0.955 0.028 292);
+  --verified: oklch(0.52 0.14 158);
+  --verified-soft: oklch(0.955 0.035 158);
+  --destructive: oklch(0.54 0.19 25);
+  --destructive-soft: oklch(0.96 0.03 25);
+  --shadow-card: 0 1px 2px oklch(0.2 0.05 285 / 5%), 0 10px 30px oklch(0.2 0.05 285 / 7%);
+  --shadow-lift: 0 2px 4px oklch(0.2 0.05 285 / 6%), 0 18px 48px oklch(0.2 0.05 285 / 10%);
+  --glow: oklch(0.62 0.25 292 / 30%);
 }
 
 .dark {
-  --paper: oklch(0.16 0.008 250);
-  --surface: oklch(0.205 0.01 250);
-  --ink: oklch(0.93 0.006 240);
-  --muted: oklch(0.7 0.012 245);
-  --rule: oklch(0.3 0.01 245);
-  --verified: oklch(0.8 0.105 160);
-  --verified-bg: oklch(0.24 0.035 160);
-  --destructive: oklch(0.74 0.13 30);
-  --destructive-bg: oklch(0.26 0.045 30);
+  --canvas: oklch(0.145 0.016 285);
+  --surface: oklch(0.195 0.02 285);
+  --surface-sunken: oklch(0.225 0.022 285);
+  --ink: oklch(0.96 0.006 285);
+  --muted: oklch(0.72 0.024 285);
+  --rule: oklch(0.29 0.022 285);
+  --accent: oklch(0.74 0.185 292);
+  --accent-ink: oklch(0.8 0.16 292);
+  --accent-soft: oklch(0.3 0.09 292);
+  --verified: oklch(0.82 0.15 158);
+  --verified-soft: oklch(0.3 0.07 158);
+  --destructive: oklch(0.72 0.16 25);
+  --destructive-soft: oklch(0.3 0.08 25);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 40%), 0 10px 30px oklch(0 0 0 / 35%);
+  --shadow-lift: 0 2px 4px oklch(0 0 0 / 45%), 0 18px 48px oklch(0 0 0 / 45%);
+  --glow: oklch(0.66 0.24 292 / 38%);
 }
 
 @theme inline {
-  --color-paper: var(--paper);
+  --color-canvas: var(--canvas);
   --color-surface: var(--surface);
+  --color-sunken: var(--surface-sunken);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
   --color-verified: var(--verified);
-  --color-verified-bg: var(--verified-bg);
+  --color-verified-soft: var(--verified-soft);
   --color-destructive: var(--destructive);
-  --color-destructive-bg: var(--destructive-bg);
+  --color-destructive-soft: var(--destructive-soft);
 
-  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
-  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
 
   --text-micro: 0.6875rem;
-  --text-micro--line-height: 1.2;
-  --text-micro--letter-spacing: 0.09em;
+  --text-micro--line-height: 1.25;
+  --text-micro--letter-spacing: 0.08em;
   --text-caption: 0.8125rem;
   --text-caption--line-height: 1.45;
   --text-body: 0.9375rem;
   --text-body--line-height: 1.6;
-  --text-lede: 1.125rem;
+  --text-lede: 1.0625rem;
   --text-lede--line-height: 1.55;
-  --text-title: 1.5rem;
-  --text-title--line-height: 1.25;
-  --text-display: 2.25rem;
-  --text-display--line-height: 1.1;
+  --text-title: 1.625rem;
+  --text-title--line-height: 1.2;
+  --text-display: clamp(2.25rem, 5.2vw, 4.25rem);
+  --text-display--line-height: 1.02;
+
+  --radius-card: 1.25rem;
+  --radius-sheet: 1.75rem;
 }
 
 @layer base {
   html {
-    background-color: var(--paper);
+    background-color: var(--canvas);
     color: var(--ink);
     -webkit-text-size-adjust: 100%;
   }
@@ -79,18 +101,18 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    font-weight: 500;
-    letter-spacing: -0.012em;
+    font-weight: 600;
+    letter-spacing: -0.03em;
   }
 
   :focus-visible {
-    outline: 2px solid var(--ink);
-    outline-offset: 2px;
-    border-radius: 1px;
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
   }
 
   ::selection {
-    background-color: var(--verified-bg);
+    background-color: var(--accent-soft);
     color: var(--ink);
   }
 
@@ -108,7 +130,37 @@
 }
 
 @layer components {
-  /* A label above a value, used across the ledger tables. */
+  /* The wordmark's mark: a ledger square with a filled corner. */
+  .mark {
+    display: inline-block;
+    height: 1.75rem;
+    width: 1.75rem;
+    border-radius: 0.5rem;
+    background-color: var(--ink);
+    position: relative;
+  }
+
+  .mark::after {
+    content: "";
+    position: absolute;
+    inset: 0.3rem 0.3rem auto 0.3rem;
+    height: 0.35rem;
+    border-radius: 0.1rem;
+    background-color: var(--surface);
+  }
+
+  .card {
+    background-color: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-flat {
+    background-color: var(--surface);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--rule);
+  }
+
   .field-label {
     font-family: var(--font-mono);
     font-size: var(--text-micro);
@@ -129,16 +181,22 @@
     letter-spacing: -0.01em;
   }
 
-  /* Hairline rule that matches the paper, used under section headers. */
-  .rule {
-    border-bottom: 1px solid var(--rule);
+  /* The ambient light behind the page, the way a lit sheet reads. */
+  .ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(64rem 40rem at 10% -12%, var(--glow), transparent 62%),
+      radial-gradient(54rem 34rem at 94% 0%, var(--glow), transparent 60%),
+      radial-gradient(46rem 34rem at 50% 112%, var(--glow), transparent 66%);
   }
 
-  /* The one authored moment: a receipt arriving in the ledger. */
   @keyframes receipt-arrival {
     from {
       opacity: 0;
-      transform: translateY(4px);
+      transform: translateY(6px);
     }
     to {
       opacity: 1;
@@ -147,7 +205,7 @@
   }
 
   .receipt-arrival {
-    animation: receipt-arrival 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: receipt-arrival 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 }
 
@@ -158,7 +216,7 @@
 }
 
 ::selection {
-  background-color: var(--verified-bg);
+  background-color: var(--accent-soft);
   color: var(--ink);
 }
 

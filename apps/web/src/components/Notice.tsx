@@ -5,10 +5,10 @@ export interface NoticeProps {
   className?: string;
 }
 
-const TONE_CLASS: Record<NoticeProps["tone"], string> = {
-  error: "border-destructive text-destructive",
-  success: "border-verified text-verified",
-  info: "border-rule text-ink",
+const TONE: Record<NoticeProps["tone"], { wrap: string; label: string }> = {
+  error: { wrap: "bg-destructive-soft text-ink", label: "text-destructive" },
+  success: { wrap: "bg-verified-soft text-ink", label: "text-verified" },
+  info: { wrap: "bg-sunken text-ink", label: "text-muted" },
 };
 
 /**
@@ -23,9 +23,9 @@ export function Notice({
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={`border-l bg-surface px-4 py-3 ${TONE_CLASS[tone]} ${className}`}
+      className={`rounded-[var(--radius-card)] px-5 py-4 ${TONE[tone].wrap} ${className}`}
     >
-      <p className="field-label">{title}</p>
+      <p className={`field-label ${TONE[tone].label}`}>{title}</p>
       {children === undefined ? null : (
         <div className="mt-1 text-body text-ink">{children}</div>
       )}

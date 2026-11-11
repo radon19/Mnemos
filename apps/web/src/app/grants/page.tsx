@@ -172,7 +172,7 @@ export default function GrantsPage(): React.ReactNode {
       )}
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
-        <section aria-labelledby="new-grant" className="space-y-4">
+        <section aria-labelledby="new-grant" className="card space-y-4 px-5 py-5">
           <h2 id="new-grant" className="text-title">
             New grant
           </h2>
@@ -191,7 +191,7 @@ export default function GrantsPage(): React.ReactNode {
                   setAgent(event.target.value);
                 }}
                 placeholder="mnemos-agent-xxxxxxxx.testnet"
-                className="min-h-11 border border-rule bg-transparent px-3 outline-none focus:border-ink"
+                className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
               />
             </label>
 
@@ -204,7 +204,7 @@ export default function GrantsPage(): React.ReactNode {
                     <label
                       key={scope}
                       className={`inline-flex min-h-11 cursor-pointer items-center gap-2 border px-3 text-caption ${
-                        active ? "border-ink bg-ink text-paper" : "border-rule text-ink"
+                        active ? "border-ink bg-ink text-canvas" : "border-rule text-ink"
                       }`}
                     >
                       <input
@@ -236,7 +236,7 @@ export default function GrantsPage(): React.ReactNode {
                   onChange={(event) => {
                     setPrice(event.target.value);
                   }}
-                  className="min-h-11 border border-rule bg-transparent px-3 outline-none focus:border-ink"
+                  className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -247,7 +247,7 @@ export default function GrantsPage(): React.ReactNode {
                   onChange={(event) => {
                     setDailyCap(event.target.value);
                   }}
-                  className="min-h-11 border border-rule bg-transparent px-3 outline-none focus:border-ink"
+                  className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -258,7 +258,7 @@ export default function GrantsPage(): React.ReactNode {
                   onChange={(event) => {
                     setDays(event.target.value);
                   }}
-                  className="min-h-11 border border-rule bg-transparent px-3 outline-none focus:border-ink"
+                  className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -269,7 +269,7 @@ export default function GrantsPage(): React.ReactNode {
                   onChange={(event) => {
                     setTokens(event.target.value);
                   }}
-                  className="min-h-11 border border-rule bg-transparent px-3 outline-none focus:border-ink"
+                  className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
                 />
               </label>
             </div>
@@ -289,7 +289,7 @@ export default function GrantsPage(): React.ReactNode {
           </form>
         </section>
 
-        <section aria-labelledby="active-grants" className="min-w-0">
+        <section aria-labelledby="active-grants" className="card min-w-0 px-5 py-5">
           <h2 id="active-grants" className="text-title">
             Grants
           </h2>
@@ -313,7 +313,7 @@ export default function GrantsPage(): React.ReactNode {
             />
           ))}
 
-          <div className="mt-10 border-t border-rule pt-6">
+          <div className="mt-8 border-t border-rule pt-6">
             <label className="flex flex-col gap-1">
               <span className="field-label">Look up a grant by agent</span>
               <input
@@ -322,7 +322,7 @@ export default function GrantsPage(): React.ReactNode {
                   setLookup(event.target.value);
                 }}
                 placeholder="mnemos-agent-xxxxxxxx.testnet"
-                className="min-h-11 border border-rule bg-transparent px-3 outline-none focus:border-ink"
+                className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
               />
             </label>
             {looked.data === null && lookup.trim().length > 3 ? (
@@ -347,12 +347,12 @@ export default function GrantsPage(): React.ReactNode {
       </div>
 
       {revokeTarget === null ? null : (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-paper/90 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/85 p-4 backdrop-blur-sm">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="revoke-title"
-            className="w-full max-w-[32rem] border border-rule bg-paper p-6"
+            className="card w-full max-w-[32rem] px-6 py-6"
           >
             <h2 id="revoke-title" className="text-title">
               Revoke this grant
@@ -370,7 +370,7 @@ export default function GrantsPage(): React.ReactNode {
                 onChange={(event) => {
                   setRevokeText(event.target.value);
                 }}
-                className="min-h-11 border border-rule bg-transparent px-3 outline-none focus:border-ink"
+                className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
               />
             </label>
             <div className="mt-5 flex gap-3">

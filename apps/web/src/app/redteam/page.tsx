@@ -46,7 +46,7 @@ export default function RedteamPage(): React.ReactNode {
       </Notice>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-        <section aria-labelledby="run" className="space-y-4">
+        <section aria-labelledby="run" className="card space-y-4 px-5 py-5">
           <h2 id="run" className="text-title">
             Run the attack set
           </h2>
@@ -57,7 +57,7 @@ export default function RedteamPage(): React.ReactNode {
               onChange={(event) => {
                 setScope(event.target.value);
               }}
-              className="min-h-11 border border-rule bg-transparent px-3 outline-none focus:border-ink"
+              className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
             >
               {SCOPES.map((name) => (
                 <option key={name} value={name}>
@@ -86,7 +86,7 @@ export default function RedteamPage(): React.ReactNode {
           ) : null}
         </section>
 
-        <section aria-labelledby="results" className="min-w-0">
+        <section aria-labelledby="results" className="card min-w-0 px-5 py-5">
           <h2 id="results" className="text-title">
             Results
           </h2>
@@ -102,11 +102,11 @@ export default function RedteamPage(): React.ReactNode {
                 {report.attacks.length} attacks against {report.items_considered} items in
                 scope {report.scope} using {report.model}.
               </p>
-              <div className="mt-4 border-t border-rule">
+              <div className="mt-4 space-y-3">
                 {report.attacks.map((attack) => {
                   const outcome = OUTCOME[attack.outcome];
                   return (
-                    <div key={attack.id} className="border-b border-rule py-4">
+                    <div key={attack.id} className="card-flat px-4 py-4">
                       <div className="flex flex-wrap items-baseline justify-between gap-3">
                         <p className="text-lede text-ink">{attack.label}</p>
                         <StatusMark kind={outcome.kind} label={outcome.label} />
@@ -116,7 +116,7 @@ export default function RedteamPage(): React.ReactNode {
                       </p>
                       <p className="mt-2 max-w-[68ch] text-body text-muted">{attack.reason}</p>
                       {attack.answer_preview === null ? null : (
-                        <p className="mt-2 border-l-2 border-rule pl-3 font-mono text-caption text-muted">
+                        <p className="mt-2 border-l border-rule pl-3 font-mono text-caption text-muted">
                           {attack.answer_preview}
                         </p>
                       )}

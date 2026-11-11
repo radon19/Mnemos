@@ -272,6 +272,37 @@ $ impeccable detect http://127.0.0.1:3000/redteam    # no findings
 The single advisory finding is the numbered setup steps, kept because the
 sequence carries the meaning. The reasoning is in `docs/DESIGN_REVIEW.md`.
 
+## Phase 8 — frontend redesign
+
+```text
+$ cd apps/web && pnpm exec playwright test
+  36 passed (4.1m)
+```
+
+The same suite as before, against the redesigned interface: axe-core on all
+seven screens at 1440, 768 and 390, the navigation, the owner sign-in, the
+encrypted note and the red-team run.
+
+```text
+$ cd apps/web && pnpm exec vitest run
+ Test Files  2 passed (2)
+      Tests  14 passed (14)
+```
+
+The second file is the token test: it reads every colour utility the app uses
+and fails when the theme does not define it.
+
+```text
+$ impeccable detect http://127.0.0.1:3000/
+[warning] ai-color-palette: Purple/violet gradient background
+[warning] radial-spotlight-glow: radial-gradient spotlight glow "ambient"
+[warning] line-length: ~113 chars/line (aim for <80)
+[warning] overused-font: Primary font: instrument sans (45% of text)
+```
+
+The first two are the reference the owner chose; the reasoning, and the
+fixes for everything the redesign did break, are in `docs/DESIGN_REVIEW.md`.
+
 ## Phase 7 — red team, demo and the full stack
 
 ```text

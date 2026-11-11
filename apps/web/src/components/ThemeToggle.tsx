@@ -32,15 +32,18 @@ export function ThemeToggle(): React.ReactNode {
   return (
     <button
       type="button"
-      className="field-label flex min-h-9 items-center gap-2 rounded-none border border-rule px-2 py-1 transition-colors hover:bg-surface"
+      className="inline-flex min-h-9 items-center gap-2 rounded-full border border-rule px-3 py-1.5 text-caption text-muted transition-colors hover:text-ink"
       onClick={() => {
         setTheme(theme === "dark" ? "light" : "dark");
       }}
       aria-label={`Current theme ${theme}. Switch to ${theme === "dark" ? "light" : "dark"} theme`}
     >
-      <span aria-hidden="true" className="inline-block h-2.5 w-2.5 border border-ink">
-        {theme === "dark" ? <span className="block h-full w-full bg-ink" /> : null}
-      </span>
+      <span
+        aria-hidden="true"
+        className={`inline-block h-3 w-3 rounded-full border border-ink ${
+          theme === "dark" ? "bg-ink" : "bg-transparent"
+        }`}
+      />
       {theme === "dark" ? "Dark" : "Light"}
     </button>
   );

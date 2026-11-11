@@ -92,7 +92,7 @@ export default function ActivityPage(): React.ReactNode {
         title="Every read, with its receipt"
         lede="A read leaves a hash-only receipt: the agent, the scope, the price, the time and a hash. The note itself is never on chain and never in the broker's logs."
         actions={
-          <span className="field-label" aria-live="polite">
+          <span className="rounded-full bg-sunken px-3 py-1.5 text-caption text-muted" aria-live="polite">
             {status !== "signed-in" ? "signed out" : live === "live" ? "live" : live === "off" ? "stream offline" : "connecting"}
           </span>
         }
@@ -119,7 +119,7 @@ export default function ActivityPage(): React.ReactNode {
       ) : null}
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
-        <section aria-labelledby="reads" className="min-w-0">
+        <section aria-labelledby="reads" className="card min-w-0 px-5 py-5">
           <h2 id="reads" className="sr-only">
             Reads
           </h2>
@@ -134,22 +134,22 @@ export default function ActivityPage(): React.ReactNode {
                 <caption className="sr-only">Reads served by the broker</caption>
                 <thead>
                   <tr>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Time
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Agent
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Scope
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Price
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       Receipt
                     </th>
-                    <th scope="col" className="field-label border-b border-rule py-2">
+                    <th scope="col" className="field-label border-b border-rule py-3">
                       State
                     </th>
                   </tr>
@@ -167,7 +167,7 @@ export default function ActivityPage(): React.ReactNode {
                           setSelected(item);
                         }}
                       >
-                        <td className="border-b border-rule py-3 pr-4">
+                        <td className="border-b border-rule px-4 py-3">
                           <button
                             type="button"
                             className="numeric text-caption text-muted underline decoration-transparent underline-offset-4 hover:text-ink hover:decoration-rule"
@@ -179,18 +179,18 @@ export default function ActivityPage(): React.ReactNode {
                             {formatTimestamp(item.served_at ?? item.created_at)}
                           </button>
                         </td>
-                        <td className="border-b border-rule py-3 pr-4">
+                        <td className="border-b border-rule px-4 py-3">
                           <span className="hash text-caption break-all">
                             {truncateAccount(item.agent, 8, 4)}
                           </span>
                         </td>
-                        <td className="border-b border-rule py-3 pr-4">
+                        <td className="border-b border-rule px-4 py-3">
                           <span className="hash text-caption">{item.scope}</span>
                         </td>
-                        <td className="border-b border-rule py-3 pr-4">
+                        <td className="border-b border-rule px-4 py-3">
                           <span className="numeric text-caption">{formatNear(item.price)} NEAR</span>
                         </td>
-                        <td className="border-b border-rule py-3 pr-4">
+                        <td className="border-b border-rule px-4 py-3">
                           <Hash value={item.receipt_hash ?? ""} label="Receipt hash" />
                         </td>
                         <td className="border-b border-rule py-3">
@@ -208,7 +208,7 @@ export default function ActivityPage(): React.ReactNode {
           )}
         </section>
 
-        <aside aria-labelledby="evidence" className="min-w-0">
+        <aside aria-labelledby="evidence" className="card min-w-0 px-5 py-5">
           <h2 id="evidence" className="text-title">
             Evidence
           </h2>
