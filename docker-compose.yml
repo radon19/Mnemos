@@ -11,6 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - mnemos-pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/10-mnemos-test.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mnemos} -d ${POSTGRES_DB:-mnemos}"]
       interval: 3s

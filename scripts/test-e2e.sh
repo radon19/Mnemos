@@ -15,7 +15,10 @@ section "broker: integration tests against Postgres"
 docker compose up -d postgres
 (
   cd apps/broker
-  export DATABASE_URL="${TEST_DATABASE_URL:-postgresql+asyncpg://mnemos:${POSTGRES_PASSWORD:-mnemos}@localhost:5432/mnemos_test}"
+  # The conftest derives the test database URL from the broker settings and
+  # always targets a database whose name contains "test", so no secret has to
+  # be echoed into the environment.
+  uv run python -c "import os, subprocess; from sqlalchemy.engine import make_url; from mnemos_broker.config import get_settings; url = make_url(get_settings().database_url).set(database='mnemos_test'); subprocess.run(['alembic', 'upgrade', 'head'], env={**os.environ, 'DATABASE_URL': url.render_as_string(hide_password=False)}, check=True)"
   uv run pytest -q -m "integration" --no-header
 )
 

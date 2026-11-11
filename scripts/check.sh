@@ -20,10 +20,10 @@ pnpm --filter @mnemos/crypto test
 section "broker: ruff, mypy, unit tests"
 (
   cd apps/broker
-  uv run ruff check .
-  uv run ruff format --check .
-  uv run mypy src
-  uv run pytest -q -m "not integration and not live"
+  uv run ruff check src tests
+  uv run ruff format --check src tests
+  uv run mypy --strict src
+  uv run pytest -q
 )
 
 section "mcp: typecheck, lint, tests"

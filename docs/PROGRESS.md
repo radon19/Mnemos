@@ -4,8 +4,10 @@ Updated: 2026-11-11
 
 ## Current phase
 
-Phase 4 — broker. Phases 0–3 are complete: the contract is deployed and the
-crypto packages pass cross-language vectors.
+Phase 5 — MCP server and agent CLI. Phases 0–4 are complete: the contract is
+deployed, the crypto packages pass cross-language vectors, and the broker is
+implemented, tested against a real Postgres and verified against live NEAR AI
+Cloud with E2EE and a TEE attestation.
 
 ## Phase checklist
 
@@ -13,7 +15,7 @@ crypto packages pass cross-language vectors.
 - [x] Phase 1 — scaffold, compose, CI, Makefile, PRODUCT.md, DESIGN.md
 - [x] Phase 2 — contract, unit and sandbox tests, testnet deploy
 - [x] Phase 3 — TS crypto, Python counterpart, shared vectors, interop
-- [ ] Phase 4 — broker: DB, auth, vault, ask pipeline, TEE, filter, sweeper, tests
+- [x] Phase 4 — broker: DB, auth, vault, ask pipeline, TEE, filter, sweeper, tests
 - [ ] Phase 5 — MCP server, agent CLI, tests, examples
 - [ ] Phase 6 — web screens, Playwright, axe
 - [ ] Phase 7 — red-team suite, demo, docs, Impeccable audit, verification
@@ -72,16 +74,49 @@ credit_of   -> 5000000000000000000000000
   mismatched content hash.
 
 
+## Phase 4 verification
+
+- `ruff check src tests`, `ruff format --check src tests`, `mypy --strict src`:
+  clean (37 source files, 20 test files).
+- Unit tests: 68 passed. Integration tests against Postgres 16: 54 passed.
+- Schema: Alembic `0001_initial` creates `owner_accounts`, `vault_items`,
+  `read_requests`, `auth_challenges`, `audit_events`. `alembic upgrade head`
+  is idempotent and runs on container start.
+- Live NEAR AI Cloud: one E2EE completion with
+  `deepseek-ai/DeepSeek-V4.1-Flash-1017` verified with `provider_tee`
+  signature, `tcb_status UpToDate`, `gpu_evidence verified`,
+  `compose_manager_verified true`. Full output in `docs/VERIFICATION.md`.
+- The broker refuses to answer before verification succeeds; there is no
+  unverified fallback path.
+
+### Phase 4 implementation notes
+
+- Ask pipeline order: signature → on-chain key ownership → request binding
+  (`q_hash`) → database claim → grant and scope checks → decrypt → rank →
+  infer → filter → settle. Failures before the claim never refund, so an
+  attacker cannot cancel someone else's pending read.
+- The claim is a primary-key insert on `read_requests`, so two concurrent
+  calls for the same request id produce exactly one served read.
+- The output filter blocks any 12-word contiguous run shared with a decrypted
+  memory item, including runs hidden in base64 or hex, then retries once with
+  a stricter prompt and refunds if the second attempt still leaks.
+- Two broker tables beyond the brief: `owner_accounts` (per-owner PBKDF2 salt)
+  and settlement hashes on `read_requests`. Recorded as D-013.
+
 ## Decisions so far
 
 - NEAR AI model: `deepseek-ai/DeepSeek-V4.1-Flash-1017` (attestation/TEE-capable
-  per models endpoint; $0.30/$1.20 per million tokens). Re-verify E2EE support
-  with the SDK before locking.
+  per models endpoint; $0.30/$1.20 per million tokens). E2EE and provider TEE
+  attestation confirmed by a live SDK call in Phase 4.
 - Wallet connection: `@hot-labs/near-connect` per current docs.near.org, not the
   deprecated wallet selector.
 - Node 26.13, pnpm 12.15, Python 3.12.16 via uv, Rust 1.98.1, near-sdk 5.30.1.
 - Contract uses `cargo near build non-reproducible-wasm` because the plain
   command requires a TTY in this environment.
+- Agent ask signature: Ed25519 over
+  `mnemos:v1:ask|{req_id}|{sha256(question)}|{nonce_hex}|{recipient}` (D-010).
+- Owner session: HMAC-signed HttpOnly SameSite=Strict cookie (D-011).
+- Prices stored as `numeric(78, 0)` because NEAR prices are u128 (D-012).
 
 ## Exact commands to resume
 
@@ -93,8 +128,12 @@ git log --oneline -10
 
 ## Open issues
 
-- Confirm E2EE/attestation support for the chosen model with a live SDK call
-  during Phase 4.
 - Day-rollover reset is unit-tested only; the sandbox `fast_forward(86_400)`
   path takes ~14 minutes and was removed from the integration suite. Re-grant
   reset is covered in the sandbox.
+- Rate limiting and the SSE activity stream are single-instance (in-process).
+  A multi-replica deployment needs a shared limiter and a shared bus.
+- The sweeper can only expire requests the broker has already seen; a request
+  created on chain and never sent to `/v1/ask` needs an indexer or an agent
+  that calls `expire_request` itself.
+

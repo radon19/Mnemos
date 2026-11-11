@@ -115,4 +115,69 @@ byte for byte and decrypt it with the owner passphrase and with the broker
 private key. Because the produced bytes are identical, either language can
 consume the other's envelopes.
 
+## D-010 — Agent request signature format
+
+**Context.** The brief requires the agent to sign each `/v1/ask` request. The
+signature has to bind the request id, the question, a nonce and the broker, or
+a captured signature could be replayed against a different question.
+
+**Decision.** The agent signs this canonical UTF-8 message with Ed25519 over
+SHA-256 of the message bytes:
+
+```text
+mnemos:v1:ask|{req_id}|{sha256(question)}|{nonce_hex}|{recipient}
+```
+
+`nonce_hex` is 32 random bytes in lowercase hex. `recipient` is the broker
+recipient (`host:port`). The broker additionally verifies that the signing
+public key belongs to the requesting agent account through
+`view_access_key`, and that the request on chain carries the same `q_hash`,
+which is `sha256(question UTF-8 || 32 nonce bytes)`. The question text itself
+is never written to the database; only `q_hash` is.
+
+## D-011 — Owner sessions are HMAC-signed cookies, not server-side sessions
+
+**Context.** The brief asks for a short-lived HttpOnly session cookie after a
+NEP-413 login. The broker is a single service with a Postgres database.
+
+**Decision.** The session cookie carries an HMAC-SHA256 signed payload with
+`account`, `iat`, `exp` and `demo`, keyed by `SESSION_SECRET`. It is
+HttpOnly, SameSite=Strict, and secure whenever `SESSION_COOKIE_SECURE=true`.
+The NEP-413 challenge itself is stored in Postgres with the exact message that
+the wallet displayed, so the broker verifies the bytes the user actually
+signed. Challenges are single use and expire after five minutes. Signing out
+deletes the cookie; there is no server-side session table to leak.
+
+## D-012 — Prices are stored as numeric(78, 0)
+
+**Context.** NEAR prices are u128 yoctoNEAR. The contract allows a price of up
+to 1000 NEAR, which is 10^24 yoctoNEAR and does not fit in a signed 64-bit
+integer. Storing the price as `bigint` silently truncated every realistic
+price.
+
+**Decision.** `read_requests.price` is `numeric(78, 0)` with a
+`YoctoAmount` type decorator that keeps exact Python integers on both sides of
+the boundary. The activity API always renders the amount as a decimal string,
+never as a float.
+
+## D-013 — Two broker tables beyond the brief
+
+**Context.** The brief lists four tables. The product needs two more to work
+without weakening any guarantee.
+
+**Decision.**
+
+- `owner_accounts` stores the per-owner PBKDF2 salt. The salt is not secret
+  (it is a KDF salt, not a key), but it must be stable: re-using a different
+  salt with the same passphrase would silently break every existing item, so
+  the broker rejects a mismatched salt instead of overwriting it.
+- `read_requests` additionally stores `price`, `receipt_tx_hash` and
+  `refund_tx_hash` so the activity screen can link a read to its settlement
+  transaction without an indexer.
+
+No plaintext memory, question text or answer text is ever stored. The broker
+stores ciphertext, nonces, wrapped DEKs, hashes, identifiers and error codes
+only.
+
+
 
