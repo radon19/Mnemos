@@ -1,7 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = Number(process.env.MNEMOS_WEB_PORT ?? 3000);
-const baseURL = process.env.MNEMOS_WEB_URL ?? `http://127.0.0.1:${PORT}`;
+// The browser, the web app and the broker have to share a host, because the
+// session cookie is set by the web app and read by the broker. "localhost"
+// everywhere is the documented setup.
+const baseURL = process.env.MNEMOS_WEB_URL ?? `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",

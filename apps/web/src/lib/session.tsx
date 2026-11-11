@@ -33,6 +33,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }): Re
   const passphraseRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // A hydration marker, so an automated client can wait until the app
+    // answers clicks instead of guessing.
+    document.body.dataset.hydrated = "true";
     const cancelled = { current: false };
     void (async () => {
       try {

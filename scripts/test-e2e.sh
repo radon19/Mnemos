@@ -5,6 +5,15 @@ cd "$(dirname "$0")/.."
 
 section() { printf '\n== %s ==\n' "$1"; }
 
+# The web app and the demo signer need the same environment as the broker.
+# Load it once, without printing anything.
+if [[ -f .env ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
 section "contract: near-workspaces sandbox tests"
 (
   cd contracts/mnemos

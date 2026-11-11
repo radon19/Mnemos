@@ -101,6 +101,7 @@ class SimulationOutcome:
     latency_ms: int
     items_considered: int
     raw_answer_preview: str
+    memories: tuple[str, ...] = ()
 
 
 class AskPipeline:
@@ -287,6 +288,7 @@ class AskPipeline:
             latency_ms=max(1, int((monotonic() - started) * 1000)),
             items_considered=considered,
             raw_answer_preview=answer_preview(generation.result.answer),
+            memories=tuple(item.text for item in selected),
         )
 
     async def _fetch_request(self, req_id: int) -> ChainRequest:
@@ -365,6 +367,27 @@ class AskPipeline:
                     E_REQUEST_CONSUMED,
                     "this read request is already being served or was served",
                 ) from error
+            except Exception as error:
+                # The request was paid for on chain but the broker cannot
+                # record it. The agent must not pay for the broker's failure,
+                # so the credit goes back before the error is reported.
+                await session.rollback()
+                await self._refund_on_chain(request, E_INTERNAL)
+                raise MnemosError(
+                    500,
+                    E_INTERNAL,
+                    "the read could not be recorded, the agent was refunded",
+                ) from error
+
+    async def _refund_on_chain(self, request: ChainRequest, code: str) -> str | None:
+        try:
+            return await self.chain.refund(request.req_id, code[:200])
+        except ContractError as error:
+            logger.warning(
+                "refund failed after an internal error",
+                extra={"req_id": request.req_id, "error_code": error.code},
+            )
+            return None
 
     async def _load_memories(self, request: ChainRequest) -> list[MemoryItem]:
         return await self._load_scope(request.owner, request.scope)

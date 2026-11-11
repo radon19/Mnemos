@@ -4,10 +4,11 @@ Updated: 2026-11-11
 
 ## Current phase
 
-Phase 7 — red-team suite, demo script, docs, final verification. Phases 0–6
-are complete: the contract is deployed, the broker is verified against live
-NEAR AI Cloud, the MCP server talks to the real chain, and the web app passes
-its accessibility suite at 390, 768 and 1440 pixels.
+All seven phases are complete. The contract is deployed on NEAR testnet, the
+broker is verified against live NEAR AI Cloud with E2EE and a TEE attestation,
+the MCP server talks to the real chain, the web app passes its accessibility
+suite at 390, 768 and 1440 pixels, and the scripted demo runs the whole
+product story against the deployed contract.
 
 ## Phase checklist
 
@@ -18,7 +19,7 @@ its accessibility suite at 390, 768 and 1440 pixels.
 - [x] Phase 4 — broker: DB, auth, vault, ask pipeline, TEE, filter, sweeper, tests
 - [x] Phase 5 — MCP server, agent CLI, tests, examples
 - [x] Phase 6 — web screens, Playwright, axe
-- [ ] Phase 7 — red-team suite, demo, docs, Impeccable audit, verification
+- [x] Phase 7 — red-team suite, demo, docs, Impeccable audit, verification
 
 ## Testnet deployment
 
@@ -167,6 +168,25 @@ yet, and the error carries the stable code and the next action.
   `NEXT_PUBLIC_DEMO_MODE` so the flow can be shown without a browser wallet.
   It is disabled by default and the UI labels it as a demo session.
 
+## Phase 7 verification
+
+- `make check` passes: the contract, the crypto packages, the broker, the MCP
+  server and the web app are all clean.
+- `make test-e2e` passes: 2 sandbox tests, 60 broker integration tests against
+  Postgres and 36 Playwright tests across 1440, 768 and 390 pixels.
+- `docker compose up -d --build` brings up Postgres, the broker and the web app
+  healthy. The web image runs the Next standalone server; the broker image
+  runs its Alembic migrations before serving.
+- `make demo` runs the whole story: NEP-413 sign-in, an encrypted note, a
+  grant, an MCP read with a verified `provider_tee` attestation, the receipt on
+  chain, the red-team set, the revoke, and the same read denied with
+  `E_GRANT_REVOKED`.
+- The red-team suite against a model that tries to comply: the bulk attacks are
+  withheld and refunded, and the report names the residual risk for the narrow
+  attacks instead of claiming they were blocked.
+- The live red-team run against the real model: six attacks, no answer carried
+  twelve consecutive words of the memory.
+
 ## Decisions so far
 - NEAR AI model: `deepseek-ai/DeepSeek-V4.1-Flash-1017` (attestation/TEE-capable
   per models endpoint; $0.30/$1.20 per million tokens). E2EE and provider TEE
@@ -199,4 +219,10 @@ git log --oneline -10
 - The sweeper can only expire requests the broker has already seen; a request
   created on chain and never sent to `/v1/ask` needs an indexer or an agent
   that calls `expire_request` itself.
+- The red-team screen reports paraphrase as a residual risk. Stopping that
+  class needs a semantic check, not a lexical one; the current mitigation is
+  the price and the daily cap.
+- The demo signer exists for environments without a browser wallet. It is
+  disabled unless `DEMO_OWNER_SECRET_KEY` and `NEXT_PUBLIC_DEMO_MODE=true`
+  are both set.
 

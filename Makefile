@@ -39,6 +39,8 @@ test-e2e:
 	./scripts/test-e2e.sh
 
 demo:
+	pnpm --filter @mnemos/crypto build
+	pnpm --filter @mnemos/mcp build
 	cd apps/broker && uv run python ../../scripts/demo.py
 
 deploy:

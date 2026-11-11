@@ -52,10 +52,14 @@ jobs:
         with:
           version: "0.13.7"
       - run: uv sync --frozen
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
-      - run: uv run mypy src
-      - run: uv run pytest -q -m "not integration and not live"
+      - run: uv run ruff check src tests
+      - run: uv run ruff format --check src tests
+      - run: uv run mypy --strict src
+      - run: uv run pytest -q
+      - name: integration tests against Postgres
+        run: |
+          uv run alembic upgrade head
+          uv run pytest -q -m integration
 
   node:
     runs-on: ubuntu-latest

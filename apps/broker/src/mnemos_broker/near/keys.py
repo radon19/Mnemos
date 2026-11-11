@@ -71,6 +71,34 @@ def public_key_bytes_of(key: Ed25519PrivateKey) -> bytes:
     return key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)
 
 
+def nep413_payload(
+    message: str, nonce: bytes, recipient: str, callback_url: str | None = None
+) -> bytes:
+    """The exact byte string a NEP-413 signature covers."""
+    if len(nonce) != 32:
+        raise ValueError("the NEP-413 nonce must be 32 bytes")
+    return (
+        NEP413_PREFIX_TAG.to_bytes(4, "little")
+        + _borsh_string(message)
+        + nonce
+        + _borsh_string(recipient)
+        + _borsh_option_string(callback_url)
+    )
+
+
+def sign_nep413(
+    key: NearKeyPair,
+    *,
+    message: str,
+    nonce: bytes,
+    recipient: str,
+    callback_url: str | None = None,
+) -> bytes:
+    """Sign a NEP-413 message the way a wallet would."""
+    payload = nep413_payload(message, nonce, recipient, callback_url)
+    return key.sign(hashlib.sha256(payload).digest())
+
+
 def decode_public_key(public_key: str) -> bytes:
     if not public_key.startswith(ED25519_PREFIX):
         raise ValueError("only ed25519 public keys are supported")

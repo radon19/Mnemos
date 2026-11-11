@@ -52,6 +52,9 @@ services:
         NEXT_PUBLIC_BROKER_RECIPIENT: ${NEXT_PUBLIC_BROKER_RECIPIENT:-localhost:8000}
         NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-false}
     environment:
+      # The browser talks to the broker on the host; the server side of the web
+      # app talks to it over the compose network.
+      BROKER_URL: http://broker:8000
       NEXT_PUBLIC_BROKER_URL: ${NEXT_PUBLIC_BROKER_URL:-http://localhost:8000}
       NEXT_PUBLIC_CONTRACT_ID: ${NEXT_PUBLIC_CONTRACT_ID:-}
       NEXT_PUBLIC_NEAR_NETWORK: ${NEXT_PUBLIC_NEAR_NETWORK:-testnet}
