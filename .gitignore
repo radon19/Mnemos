@@ -1,0 +1,43 @@
+# secrets
+.env
+.env.*
+!.env.example
+.secrets/
+*.pem
+*.key
+
+# node
+node_modules/
+.pnpm-store/
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+
+# python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# rust
+target/
+contracts/**/target/
+*.wasm
+
+# playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
+*.log

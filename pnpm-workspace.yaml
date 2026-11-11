@@ -1,0 +1,5 @@
+packages:
+  - apps/web
+  - apps/mcp
+  - packages/crypto
+  - packages/crypto-vectors
