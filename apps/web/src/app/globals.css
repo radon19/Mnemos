@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+/* Mnemos is a ledger, not a dashboard: neutral paper, hairline rules, one
+   accent for the verified state and one for destructive actions. Both themes
+   are designed separately; the dark theme is a dim reading surface. */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --paper: oklch(0.975 0.004 240);
+  --surface: oklch(0.945 0.006 240);
+  --ink: oklch(0.22 0.012 250);
+  --muted: oklch(0.5 0.014 250);
+  --rule: oklch(0.86 0.008 245);
+  --verified: oklch(0.43 0.095 160);
+  --verified-bg: oklch(0.94 0.025 160);
+  --destructive: oklch(0.48 0.145 30);
+  --destructive-bg: oklch(0.95 0.03 30);
+}
+
+.dark {
+  --paper: oklch(0.16 0.008 250);
+  --surface: oklch(0.205 0.01 250);
+  --ink: oklch(0.93 0.006 240);
+  --muted: oklch(0.7 0.012 245);
+  --rule: oklch(0.3 0.01 245);
+  --verified: oklch(0.8 0.105 160);
+  --verified-bg: oklch(0.24 0.035 160);
+  --destructive: oklch(0.74 0.13 30);
+  --destructive-bg: oklch(0.26 0.045 30);
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-verified: var(--verified);
+  --color-verified-bg: var(--verified-bg);
+  --color-destructive: var(--destructive);
+  --color-destructive-bg: var(--destructive-bg);
+
+  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1.2;
+  --text-micro--letter-spacing: 0.09em;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.45;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.6;
+  --text-lede: 1.125rem;
+  --text-lede--line-height: 1.55;
+  --text-title: 1.5rem;
+  --text-title--line-height: 1.25;
+  --text-display: 2.25rem;
+  --text-display--line-height: 1.1;
+}
+
+@layer base {
+  html {
+    background-color: var(--paper);
+    color: var(--ink);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-feature-settings: "kern", "liga";
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.012em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+    border-radius: 1px;
+  }
+
+  ::selection {
+    background-color: var(--verified-bg);
+    color: var(--ink);
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  table {
+    border-collapse: collapse;
+  }
+}
+
+@layer components {
+  /* A label above a value, used across the ledger tables. */
+  .field-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-micro);
+    letter-spacing: var(--text-micro--letter-spacing);
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .numeric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  .hash {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* Hairline rule that matches the paper, used under section headers. */
+  .rule {
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* The one authored moment: a receipt arriving in the ledger. */
+  @keyframes receipt-arrival {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .receipt-arrival {
+    animation: receipt-arrival 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+/* Browser surfaces that belong to no design system by default. */
+* {
+  scrollbar-color: var(--rule) transparent;
+  scrollbar-width: thin;
+}
+
+::selection {
+  background-color: var(--verified-bg);
+  color: var(--ink);
+}
+
+textarea,
+input {
+  caret-color: var(--ink);
+}
+
+/* Motion only communicates state changes, and never fights the reader's
+   preference for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -235,3 +235,41 @@ The owner has not granted this agent access yet. Ask them to create a grant for 
 The `grants` command reports the honest state of the chain: no grant exists
 yet, and the error carries the stable code and the next action.
 
+## Phase 6 — web app
+
+```text
+$ cd apps/web && pnpm exec tsc --noEmit
+$ cd apps/web && pnpm exec eslint .
+$ cd apps/web && pnpm build
+✓ Generating static pages using 12 workers (10/10) in 432ms
+
+$ cd apps/web && pnpm exec playwright test e2e/accessibility.spec.ts
+  ✓   1 [desktop-1440] › landing has no automated accessibility violations (612ms)
+  ✓   7 [desktop-1440] › red-team has no automated accessibility violations (652ms)
+  ✓  10 [tablet-768] › landing has no automated accessibility violations (794ms)
+  ✓  16 [tablet-768] › red-team has no automated accessibility violations (632ms)
+  ✓  19 [mobile-390] › landing has no automated accessibility violations (822ms)
+  ✓  25 [mobile-390] › red-team has no automated accessibility violations (644ms)
+  ✓  26 [mobile-390] › the page does not scroll sideways at 390 pixels (243ms)
+  ✓  27 [mobile-390] › the navigation reaches every screen from the rail (877ms)
+
+  27 passed (19.2s)
+```
+
+Impeccable anti-pattern detector, every screen, after the fixes:
+
+```text
+$ impeccable detect http://127.0.0.1:3000/          # no findings
+$ impeccable detect http://127.0.0.1:3000/setup      # advisory only
+  [advisory] numbered-section-labels: tiny numbered label "01" beside h2 "Wallet"
+$ impeccable detect http://127.0.0.1:3000/vault      # no findings
+$ impeccable detect http://127.0.0.1:3000/grants     # no findings
+$ impeccable detect http://127.0.0.1:3000/activity   # no findings
+$ impeccable detect http://127.0.0.1:3000/earnings   # no findings
+$ impeccable detect http://127.0.0.1:3000/redteam    # no findings
+```
+
+The single advisory finding is the numbered setup steps, kept because the
+sequence carries the meaning. The reasoning is in `docs/DESIGN_REVIEW.md`.
+
+

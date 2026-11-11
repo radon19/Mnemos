@@ -49,7 +49,8 @@ def test_session_rejects_tampering_and_malformed_tokens() -> None:
     secret = b"s" * 32
     token, _ = sign_session("owner.testnet", secret, ttl=timedelta(minutes=30))
     encoded, signature = token.split(".", 1)
-    tampered = f"{encoded}.{signature[:-1]}0"
+    flipped = "0" if signature[-1] != "0" else "1"
+    tampered = f"{encoded}.{signature[:-1]}{flipped}"
     with pytest.raises(MnemosError):
         verify_session(tampered, secret)
     with pytest.raises(MnemosError):

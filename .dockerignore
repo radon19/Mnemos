@@ -1,0 +1,23 @@
+# Build context is the repository root.
+.git
+.env
+.env.*
+!.env.example
+.secrets
+node_modules
+**/node_modules
+.next
+**/.next
+apps/broker/.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+contracts/**/target
+target
+**/*.wasm
+test-results
+playwright-report
+**/test-results
+docs
+*.log

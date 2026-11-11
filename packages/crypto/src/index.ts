@@ -29,6 +29,7 @@ export {
   openItemWithKek,
   openItemWithOwner,
   ownerWrapAad,
+  randomBytes,
   sealItem,
   sealItemWithKek,
   uint8ArrayToHex,

@@ -32,11 +32,11 @@ every status also has a word and a shape.
 ### Light
 
 ```
---paper       oklch(0.975 0.006 85)   warm paper
---surface     oklch(0.945 0.008 85)   recessed rows
---ink         oklch(0.22 0.012 70)    primary text
---muted       oklch(0.50 0.012 70)    secondary text (AA on paper)
---rule        oklch(0.86 0.008 80)    hairline rules
+--paper       oklch(0.975 0.004 240)   archival white, faintly cool
+--surface     oklch(0.945 0.006 240)   recessed rows
+--ink         oklch(0.22 0.012 250)    primary text
+--muted       oklch(0.50 0.014 250)    secondary text (5.58:1 on paper)
+--rule        oklch(0.86 0.008 245)    hairline rules
 --verified    oklch(0.43 0.095 160)   verified ink
 --verified-bg oklch(0.94 0.025 160)   verified tint
 --destructive oklch(0.48 0.145 30)    destructive ink
@@ -46,11 +46,11 @@ every status also has a word and a shape.
 ### Dark
 
 ```
---paper       oklch(0.16 0.008 70)
---surface     oklch(0.205 0.008 70)
---ink         oklch(0.93 0.006 85)
---muted       oklch(0.70 0.010 80)
---rule        oklch(0.30 0.008 75)
+--paper       oklch(0.16 0.008 250)
+--surface     oklch(0.205 0.010 250)
+--ink         oklch(0.93 0.006 240)
+--muted       oklch(0.70 0.012 245)
+--rule        oklch(0.30 0.010 245)
 --verified    oklch(0.80 0.105 160)
 --verified-bg oklch(0.24 0.035 160)
 --destructive oklch(0.74 0.130 30)
@@ -61,6 +61,11 @@ Both themes are designed separately, not inverted. The dark theme is a dim
 reading surface, not neon on black. Body text and interactive labels meet WCAG
 AA (4.5:1) against their surfaces; large headings meet 3:1. Focus is a 2px ink
 outline with a 2px offset, visible in both themes.
+
+The paper is a cool archival white rather than a warm cream. A cream page
+background is the default "tasteful" surface and reads as decoration; a faintly
+cool white reads as a document, which is what this interface is. The warmth
+that remains lives in the type, not in the background.
 
 ## Layout
 
@@ -85,6 +90,8 @@ outline with a 2px offset, visible in both themes.
   full value. Hashes are content, not fine print.
 - **Ledger table:** header in small caps mono; rows separated by 1px rules; no
   zebra striping; hover undims a row's actions.
+- **Screen opening:** a serif title and one sentence of orientation. The screen
+  name is already in the navigation, so it is not repeated above the title.
 - **Grant form:** inline, labelled, with live computed price in NEAR and a plain
   explanation of what each limit does. Revoke is a separate, deliberate action
   with a typed confirmation.

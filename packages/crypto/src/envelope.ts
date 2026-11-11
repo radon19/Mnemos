@@ -23,7 +23,7 @@ import {
   bytesToHex,
   concatBytes,
   hexToBytes,
-  randomBytes,
+  randomBytes as nobleRandomBytes,
 } from "@noble/hashes/utils.js";
 
 export const PROTOCOL_VERSION = "mnemos:v1";
@@ -201,6 +201,14 @@ export function deriveOwnerKek(
 export function fingerprintBrokerKey(publicKey: Uint8Array): string {
   assertKeyLength("broker public key", publicKey, X25519_KEY_BYTES);
   return bytesToHex(sha256(publicKey));
+}
+
+/** Cryptographically secure random bytes, for nonces, salts and item ids. */
+export function randomBytes(length: number): Uint8Array {
+  if (!Number.isInteger(length) || length <= 0) {
+    throw new MnemosCryptoError("E_INVALID_KEY", "length must be a positive integer");
+  }
+  return nobleRandomBytes(length);
 }
 
 export function sealItem(input: SealItemInput): ItemEnvelope {

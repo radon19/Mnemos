@@ -4,9 +4,10 @@ Updated: 2026-11-11
 
 ## Current phase
 
-Phase 6 — web app. Phases 0–5 are complete: the contract is deployed, the
-crypto packages pass cross-language vectors, the broker is verified against
-live NEAR AI Cloud, and the MCP server talks to the real chain.
+Phase 7 — red-team suite, demo script, docs, final verification. Phases 0–6
+are complete: the contract is deployed, the broker is verified against live
+NEAR AI Cloud, the MCP server talks to the real chain, and the web app passes
+its accessibility suite at 390, 768 and 1440 pixels.
 
 ## Phase checklist
 
@@ -16,7 +17,7 @@ live NEAR AI Cloud, and the MCP server talks to the real chain.
 - [x] Phase 3 — TS crypto, Python counterpart, shared vectors, interop
 - [x] Phase 4 — broker: DB, auth, vault, ask pipeline, TEE, filter, sweeper, tests
 - [x] Phase 5 — MCP server, agent CLI, tests, examples
-- [ ] Phase 6 — web screens, Playwright, axe
+- [x] Phase 6 — web screens, Playwright, axe
 - [ ] Phase 7 — red-team suite, demo, docs, Impeccable audit, verification
 
 ## Testnet deployment
@@ -140,8 +141,33 @@ The owner has not granted this agent access yet. Ask them to create a grant for 
 The `grants` command reports the honest state of the chain: no grant exists
 yet, and the error carries the stable code and the next action.
 
-## Decisions so far
+## Phase 6 verification
 
+- `tsc --noEmit`, `eslint .` and `next build` are clean.
+- Playwright with axe-core: 27 tests pass at 1440, 768 and 390 pixels, covering
+  all seven screens, horizontal overflow and the navigation.
+- The Impeccable detector reports no primary finding on any screen. The
+  findings that existed were fixed: kicker labels, the cream background,
+  cramped padding, low-contrast disabled buttons, a hydration error and a
+  horizontal overflow at 768. One advisory finding was kept on purpose and is
+  recorded in `docs/DESIGN_REVIEW.md`.
+- Screenshots at 1440 and 390 in both themes were reviewed.
+
+### Phase 6 implementation notes
+
+- Next.js 16 App Router, TypeScript strict, Tailwind 4 tokens, TanStack Query
+  for server state, `@hot-labs/near-connect` for the wallet and NEP-413
+  signing.
+- The vault item is sealed in the browser with `@mnemos/crypto` before it is
+  sent. The passphrase is held in a ref for the lifetime of the tab and is
+  never stored or sent.
+- The owner session comes from the broker as an HttpOnly cookie; the browser
+  never sees a key.
+- A local demo signer exists behind `DEMO_OWNER_SECRET_KEY` and
+  `NEXT_PUBLIC_DEMO_MODE` so the flow can be shown without a browser wallet.
+  It is disabled by default and the UI labels it as a demo session.
+
+## Decisions so far
 - NEAR AI model: `deepseek-ai/DeepSeek-V4.1-Flash-1017` (attestation/TEE-capable
   per models endpoint; $0.30/$1.20 per million tokens). E2EE and provider TEE
   attestation confirmed by a live SDK call in Phase 4.
