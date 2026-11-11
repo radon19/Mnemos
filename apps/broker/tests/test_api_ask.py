@@ -132,6 +132,54 @@ async def test_concurrent_calls_serve_exactly_once(
 
 
 @pytest.mark.asyncio
+async def test_scope_isolation_a_grant_never_exposes_another_scope(
+    settings, app_factory, fake_chain, fake_inference, agent_key, db_engine
+) -> None:
+    """A grant for one scope must not put another scope in front of the model."""
+    fake_chain.requests[1] = make_request(scope="travel")
+    fake_chain.grants[("owner.testnet", "agent.testnet")] = make_grant(scopes=("travel",))
+    await insert_vault_item(
+        db_engine, seal(settings, scope="travel", text="My flight is at 09:15.")
+    )
+    await insert_vault_item(
+        db_engine,
+        seal(
+            settings,
+            scope="work",
+            text="The quarterly salary review is scheduled with the finance team.",
+        ),
+    )
+    fake_inference.queue("Your flight is at 09:15.")
+    app, _, _ = app_factory(settings=settings, chain=fake_chain, inference=fake_inference)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://broker.test") as http:
+        response = await http.post("/v1/ask", json=ask_payload(agent_key))
+    assert response.status_code == 200, response.text
+    _, user_prompt, _ = fake_inference.prompts[0]
+    assert "My flight is at 09:15." in user_prompt
+    assert "quarterly salary review" not in user_prompt
+    assert "finance team" not in user_prompt
+
+
+@pytest.mark.asyncio
+async def test_a_request_outside_the_granted_scope_is_refused(
+    settings, app_factory, fake_chain, fake_inference, agent_key, db_engine
+) -> None:
+    fake_chain.requests[1] = make_request(scope="work")
+    fake_chain.grants[("owner.testnet", "agent.testnet")] = make_grant(scopes=("travel",))
+    await insert_vault_item(
+        db_engine, seal(settings, scope="work", text="The salary review is on Friday.")
+    )
+    fake_inference.queue("The salary review is on Friday.")
+    app, _, _ = app_factory(settings=settings, chain=fake_chain, inference=fake_inference)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://broker.test") as http:
+        response = await http.post("/v1/ask", json=ask_payload(agent_key))
+    assert response.status_code == 403
+    assert response.json()["code"] == "E_SCOPE_DENIED"
+    assert fake_inference.prompts == []
+    assert fake_chain.refunds[0][1] == "E_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
 async def test_bad_signature_is_rejected_before_claim(
     settings, app_factory, fake_chain, fake_inference, agent_key
 ) -> None:

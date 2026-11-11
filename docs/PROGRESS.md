@@ -172,7 +172,7 @@ yet, and the error carries the stable code and the next action.
 
 - `make check` passes: the contract, the crypto packages, the broker, the MCP
   server and the web app are all clean.
-- `make test-e2e` passes: 2 sandbox tests, 60 broker integration tests against
+- `make test-e2e` passes: 2 sandbox tests, 62 broker integration tests against
   Postgres and 36 Playwright tests across 1440, 768 and 390 pixels.
 - `docker compose up -d --build` brings up Postgres, the broker and the web app
   healthy. The web image runs the Next standalone server; the broker image

@@ -285,7 +285,7 @@ test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 All checks passed!
 57 files already formatted
 Success: no issues found in 37 source files
-69 passed, 61 deselected in 0.75s
+69 passed, 63 deselected in 0.72s
 == mcp: typecheck, lint, tests ==
  Test Files  5 passed (5)
       Tests  32 passed (32)
@@ -301,9 +301,9 @@ $ ./scripts/test-e2e.sh
 == contract: near-workspaces sandbox tests ==
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 36.49s
 == broker: integration tests against Postgres ==
-60 passed, 70 deselected in 7.50s
+62 passed, 70 deselected in 7.86s
 == web: Playwright end-to-end ==
-  36 passed (2.3m)
+  36 passed (3.4m)
 
 End-to-end suite passed.
 ```
