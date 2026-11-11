@@ -398,5 +398,57 @@ mock model that tries to comply is covered by
 refunded, and the report labels the narrow attacks as residual risk instead of
 claiming they were blocked.
 
+### From a clean clone
+
+The repository was cloned into an empty directory and the README steps were
+followed with nothing but `.env` and `.secrets/` added:
+
+```text
+$ git clone /home/radon/HACKS/Mnemos clean-clone
+$ cd clean-clone
+$ make install
+...
+install exit=0
+
+$ docker compose up -d --build
+ Container mnemos-broker-1 Started
+ Container mnemos-web-1 Started
+
+$ docker compose ps
+NAME                SERVICE    STATUS
+mnemos-broker-1     broker     Up 2 minutes (healthy)
+mnemos-postgres-1   postgres   Up 2 minutes (healthy)
+mnemos-web-1        web        Up 2 minutes (healthy)
+
+$ make demo
+...
+== 7. the owner revokes the grant ==
+   grant revoked
+   transaction 6DQmioLYG511wTQjnUwLXxGERTPXgrfxjgo8pCrVXEkw
+
+== 8. the same read is now denied ==
+   denied: E_GRANT_REVOKED: {"ActionError":{"index":0,"kind":{"FunctionCallError":{"ExecutionError":"Smart contract panicked: E_GRANT_REVOKED: grant has been revoked"}}}}
+The owner revoked this grant. Access stops immediately; the owner can create a new one.
+
+== 9. the demo note is removed again ==
+   note deleted
+
+Demo complete.
+demo exit=0
+```
+
+### Secrets
+
+Every commit in the repository was walked and every blob compared against the
+real values of the API key, the session secret, the broker key, the agent and
+owner keys, the Postgres password and the demo signer key:
+
+```text
+scanning the whole history for 15 secret values
+commits scanned: 7
+SECRET HITS: none
+```
+
+
 
 
