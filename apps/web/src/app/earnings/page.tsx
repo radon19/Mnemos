@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusMark } from "@/components/StatusMark";
 import { nearToYocto } from "@/lib/amount";
 import { formatNear, formatTimestamp, truncateAccount } from "@/lib/format";
-import { callView, connectWallet, sendContractCall, walletAccounts, type ReceiptView } from "@/lib/near";
+import { callView, connectWallet, sendContractCall, walletAccounts, type ContractConfig, type ReceiptView } from "@/lib/near";
 import { describeError, useSession } from "@/lib/session";
 
 export default function EarningsPage(): React.ReactNode {
@@ -19,18 +19,28 @@ export default function EarningsPage(): React.ReactNode {
   const [amount, setAmount] = useState("");
   const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
 
+  // The balance and the receipt ring are public chain views. The contract
+  // owner is public too, so the screen shows the real figures even before
+  // the owner signs in.
+  const config = useQuery({
+    queryKey: ["contract-config"],
+    queryFn: async () => await callView<ContractConfig>("get_config", {}),
+    retry: false,
+  });
+  const owner = account ?? config.data?.owner ?? null;
+
   const earnings = useQuery({
-    queryKey: ["earnings", account],
-    enabled: status === "signed-in" && account !== null,
-    queryFn: async () => await callView<string>("earnings_of", { owner: account ?? "" }),
+    queryKey: ["earnings", owner],
+    enabled: owner !== null,
+    queryFn: async () => await callView<string>("earnings_of", { owner: owner ?? "" }),
     retry: false,
   });
 
   const receipts = useQuery({
-    queryKey: ["earnings-receipts", account],
-    enabled: status === "signed-in" && account !== null,
+    queryKey: ["earnings-receipts", owner],
+    enabled: owner !== null,
     queryFn: async () => await callView<ReceiptView[]>("recent_receipts", {
-      owner: account ?? "",
+      owner: owner ?? "",
       from: 0,
       limit: 50,
     }),
@@ -89,9 +99,12 @@ export default function EarningsPage(): React.ReactNode {
             <h2 id="balance" className="field-label">
               Unwithdrawn balance
             </h2>
-            <p className="numeric mt-2 text-display text-ink">{formatNear(balance)} NEAR</p>
-            <p className="mt-1 text-caption text-muted">
-              Read from the contract. It moves only when a read is served.
+            <p className="numeric mt-2 text-[2.5rem] leading-none font-semibold text-ink">
+              {formatNear(balance)} <span className="text-[1.25rem] text-muted">NEAR</span>
+            </p>
+            <p className="mt-2 max-w-[38ch] text-caption text-muted">
+              Read from the contract for {owner ?? "the owner"}. It moves only when a read
+              is served.
             </p>
           </div>
 
