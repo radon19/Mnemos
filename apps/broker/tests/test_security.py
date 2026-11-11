@@ -70,6 +70,16 @@ def test_question_digest_and_hash_are_sha256() -> None:
         question_hash(question, "00")
 
 
+def test_question_hash_matches_the_typescript_implementation() -> None:
+    """The same vector is pinned in apps/mcp/test/signer.test.ts."""
+    assert question_digest("When is my flight?") == (
+        "8cb2e018977f5ea40a0701b74a0b2712f8a7e03f82725195f382ce57d8a68b8c"
+    )
+    assert question_hash("When is my flight?", "11" * 32) == (
+        "f3a0b770b51754a113ea2da0a03ffde614b152509db26289a1759759eec2bc71"
+    )
+
+
 def test_ask_signature_verifies_and_rejects_other_message(agent_key) -> None:
     nonce = "11" * 32
     signature = sign_ask(agent_key, req_id=7, question="When is my flight?", nonce_hex=nonce)

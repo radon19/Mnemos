@@ -1,0 +1,18 @@
+{
+  "$comment": "Claude Code MCP configuration. Replace the paths and account ids with your own, then run `mnemos-agent credit` to check the key and balance before using the tools.",
+  "mcpServers": {
+    "mnemos": {
+      "command": "node",
+      "args": ["/absolute/path/to/Mnemos/apps/mcp/dist/stdio.js"],
+      "env": {
+        "MNEMOS_CONTRACT_ID": "mnemos-contract-xxxxxxxx.testnet",
+        "MNEMOS_AGENT_ACCOUNT": "mnemos-agent-xxxxxxxx.testnet",
+        "MNEMOS_AGENT_KEY": "ed25519:YOUR_AGENT_SECRET_KEY",
+        "MNEMOS_BROKER_URL": "http://localhost:8000",
+        "MNEMOS_BROKER_RECIPIENT": "localhost:8000",
+        "NEAR_RPC_URL": "https://test.rpc.fastnear.com",
+        "MNEMOS_NETWORK_ID": "testnet"
+      }
+    }
+  }
+}

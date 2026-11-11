@@ -325,7 +325,10 @@ async fn full_lifecycle_and_negative_paths() -> anyhow::Result<()> {
     let ts_before = env.worker.view_block().await?.timestamp();
     env.worker.fast_forward(2_500).await?;
     let ts_after = env.worker.view_block().await?.timestamp();
-    eprintln!("fast forward delta ns: {}", ts_after.saturating_sub(ts_before));
+    eprintln!(
+        "fast forward delta ns: {}",
+        ts_after.saturating_sub(ts_before)
+    );
     env.owner
         .call(env.contract.id(), "expire_request")
         .args_json(json!({"req_id": expiring}))
@@ -390,14 +393,7 @@ async fn pause_and_withdrawals() -> anyhow::Result<()> {
         .into_result()?;
 
     // Only the contract owner can pause.
-    expect_error(
-        &env,
-        &env.agent,
-        "pause",
-        json!({}),
-        "E_NOT_CONTRACT_OWNER",
-    )
-    .await?;
+    expect_error(&env, &env.agent, "pause", json!({}), "E_NOT_CONTRACT_OWNER").await?;
     env.owner
         .call(env.contract.id(), "pause")
         .args_json(json!({}))
@@ -430,11 +426,16 @@ async fn pause_and_withdrawals() -> anyhow::Result<()> {
         .into_result()?;
     let mut owner_after = env.owner.view_account().await?.balance;
     for _ in 0..20 {
-        if owner_after > owner_before { break; }
+        if owner_after > owner_before {
+            break;
+        }
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         owner_after = env.owner.view_account().await?.balance;
     }
-    assert!(owner_after > owner_before, "owner balance should increase: {owner_before:?} -> {owner_after:?}");
+    assert!(
+        owner_after > owner_before,
+        "owner balance should increase: {owner_before:?} -> {owner_after:?}"
+    );
     let earnings: String = env
         .contract
         .view("earnings_of")
@@ -462,11 +463,16 @@ async fn pause_and_withdrawals() -> anyhow::Result<()> {
         .into_result()?;
     let mut agent_after = env.agent.view_account().await?.balance;
     for _ in 0..20 {
-        if agent_after > agent_before { break; }
+        if agent_after > agent_before {
+            break;
+        }
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         agent_after = env.agent.view_account().await?.balance;
     }
-    assert!(agent_after > agent_before, "agent balance should increase: {agent_before:?} -> {agent_after:?}");
+    assert!(
+        agent_after > agent_before,
+        "agent balance should increase: {agent_before:?} -> {agent_after:?}"
+    );
     expect_error(
         &env,
         &env.agent,

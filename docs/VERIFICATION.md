@@ -3,6 +3,61 @@
 Real command output, copied from the machine that built Mnemos. Nothing here is
 reconstructed or paraphrased.
 
+## Whole repository
+
+```text
+$ ./scripts/check.sh
+== contract: format, clippy, unit tests ==
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.20s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.21s
+     Running unittests src/lib.rs (target/debug/deps/mnemos_contract-f2c6d7952d889d1c)
+running 13 tests
+test tests::invalid_inputs_are_rejected ... ok
+test tests::broker_and_grant_are_registered_and_viewed ... ok
+test tests::expiry_restores_credit_and_is_permissionless ... ok
+test tests::grant_upsert_resets_usage_and_unrevokes ... ok
+test tests::refund_restores_credit_and_cap ... ok
+test tests::non_broker_cannot_record_or_refund ... ok
+test tests::pause_blocks_new_grants_and_reads ... ok
+test tests::read_escrows_credit_and_receipt_pays_owner ... ok
+test tests::daily_cap_blocks_then_resets_next_day ... ok
+test tests::withdrawal_success_callbacks_emit_events ... ok
+test tests::withdrawal_failure_callbacks_restore_balances ... ok
+test tests::revoked_expired_scope_and_credit_paths ... ok
+test tests::recent_receipts_ring_is_capped_and_newest_first ... ok
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.49s
+== crypto: build, typecheck, unit + vector tests ==
+$ tsc -p tsconfig.json
+$ vitest run
+ RUN  v5.1.0 /home/radon/HACKS/Mnemos/packages/crypto
+ Test Files  1 passed (1)
+      Tests  21 passed (21)
+   Start at  12:49:43
+   Duration  5.25s (tests 88%, import 12%)
+== broker: ruff, mypy, unit tests ==
+All checks passed!
+57 files already formatted
+Success: no issues found in 37 source files
+.....................................................................    [100%]
+69 passed, 54 deselected in 0.69s
+== mcp: typecheck, lint, tests ==
+$ tsc -p tsconfig.json --noEmit
+$ eslint .
+$ vitest run
+ RUN  v5.1.0 /home/radon/HACKS/Mnemos/apps/mcp
+ Test Files  5 passed (5)
+      Tests  32 passed (32)
+   Start at  12:49:16
+   Duration  1.23s (tests 75%, import 22%, other 3%)
+== web: typecheck, lint, tests ==
+No projects matched the filters in "/home/radon/HACKS/Mnemos"
+
+All checks passed.
+```
+
+The web section is a no-op until the web app lands in Phase 6.
+
+
 ## Phase 2 — contract
 
 ```text
@@ -141,3 +196,42 @@ $ uv run --project apps/broker python scripts/verify-nearai.py
 
 The broker never uses an answer before `verify_response` succeeds, and it has
 no unverified fallback path.
+
+## Phase 5 — MCP server
+
+```text
+$ cd apps/mcp && pnpm typecheck
+$ tsc -p tsconfig.json --noEmit
+
+$ cd apps/mcp && pnpm lint
+$ eslint .
+
+$ cd apps/mcp && pnpm test
+$ vitest run
+
+ RUN  v5.1.0 /home/radon/HACKS/Mnemos/apps/mcp
+
+ Test Files  5 passed (5)
+      Tests  32 passed (32)
+   Start at  12:49:16
+   Duration  1.23s (tests 75%, import 22%, other 3%)
+```
+
+Live against NEAR testnet with the real agent account:
+
+```text
+$ uv run --project apps/broker python scripts/live-mcp-check.py
+$ mnemos-agent credit
+{
+  "agent": "mnemos-agent-76badc8e.testnet",
+  "credit_yocto": "5000000000000000000000000",
+  "credit_near": "5"
+}
+$ mnemos-agent grants --owner mnemos-owner-76badc8e.testnet
+E_GRANT_NOT_FOUND: mnemos-owner-76badc8e.testnet has no grant for mnemos-agent-76badc8e.testnet
+The owner has not granted this agent access yet. Ask them to create a grant for this agent account.
+```
+
+The `grants` command reports the honest state of the chain: no grant exists
+yet, and the error carries the stable code and the next action.
+

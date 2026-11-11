@@ -179,5 +179,44 @@ No plaintext memory, question text or answer text is ever stored. The broker
 stores ciphertext, nonces, wrapped DEKs, hashes, identifiers and error codes
 only.
 
+## D-014 — The MCP server finds its own request id on chain
+
+**Context.** `request_read` returns the new request id as the return value of
+the function call. Parsing that value out of a NEAR transaction receipt is
+version specific and easy to get wrong, and the id is not returned in a place
+the RPC makes easy to read.
+
+**Decision.** The MCP server reads `get_config().next_request_id` before and
+after the transaction and selects the request whose `q_hash` matches the one
+it sent. Request ids are sequential, so the new request is always inside that
+window, and matching on the hash keeps the lookup correct when another agent
+creates a request at the same time. The method never guesses an id.
+
+## D-015 — The MCP server is the only place that signs for the agent
+
+**Context.** An agent key that can call `request_read` could also be used to
+sign arbitrary transactions if it leaked.
+
+**Decision.** The MCP server holds the agent key in its process environment
+only. It uses the key for exactly two things: signing the `request_read`
+transaction and signing the canonical ask message for `/v1/ask`. The broker
+verifies that the signing key belongs to the agent account with
+`view_access_key` before serving a read, and the contract charges the agent
+before the request exists, so a leaked key cannot read the vault directly.
+
+## D-016 — near-api-js is pinned to 7.4.0
+
+**Context.** The workspace enforces a minimum release age for npm packages.
+`near-api-js` 7.5.0 and 7.5.1 were published on the day of the build and are
+inside that window, so the lockfile would need an explicit exclusion for them.
+
+**Decision.** Pin `near-api-js` 7.4.0, the newest release that is outside the
+minimum-release-age window. The API used by the MCP server (`Account`,
+`JsonRpcProvider`, `actions.functionCall`, `KeyPair.fromString`) is identical
+in 7.4.0, all 32 tests pass against it, and the lockfile passes the
+supply-chain policy with no exclusions.
+
+
+
 
 

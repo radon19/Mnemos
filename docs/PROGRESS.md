@@ -4,10 +4,9 @@ Updated: 2026-11-11
 
 ## Current phase
 
-Phase 5 — MCP server and agent CLI. Phases 0–4 are complete: the contract is
-deployed, the crypto packages pass cross-language vectors, and the broker is
-implemented, tested against a real Postgres and verified against live NEAR AI
-Cloud with E2EE and a TEE attestation.
+Phase 6 — web app. Phases 0–5 are complete: the contract is deployed, the
+crypto packages pass cross-language vectors, the broker is verified against
+live NEAR AI Cloud, and the MCP server talks to the real chain.
 
 ## Phase checklist
 
@@ -16,7 +15,7 @@ Cloud with E2EE and a TEE attestation.
 - [x] Phase 2 — contract, unit and sandbox tests, testnet deploy
 - [x] Phase 3 — TS crypto, Python counterpart, shared vectors, interop
 - [x] Phase 4 — broker: DB, auth, vault, ask pipeline, TEE, filter, sweeper, tests
-- [ ] Phase 5 — MCP server, agent CLI, tests, examples
+- [x] Phase 5 — MCP server, agent CLI, tests, examples
 - [ ] Phase 6 — web screens, Playwright, axe
 - [ ] Phase 7 — red-team suite, demo, docs, Impeccable audit, verification
 
@@ -102,6 +101,44 @@ credit_of   -> 5000000000000000000000000
   a stricter prompt and refunds if the second attempt still leaks.
 - Two broker tables beyond the brief: `owner_accounts` (per-owner PBKDF2 salt)
   and settlement hashes on `read_requests`. Recorded as D-013.
+
+## Phase 5 verification
+
+```text
+$ cd apps/mcp && pnpm typecheck
+$ tsc -p tsconfig.json --noEmit
+
+$ cd apps/mcp && pnpm lint
+$ eslint .
+
+$ cd apps/mcp && pnpm test
+$ vitest run
+
+ RUN  v5.1.0 /home/radon/HACKS/Mnemos/apps/mcp
+
+ Test Files  5 passed (5)
+      Tests  32 passed (32)
+   Start at  12:49:16
+   Duration  1.23s (tests 75%, import 22%, other 3%)
+```
+
+Live against NEAR testnet with the real agent account:
+
+```text
+$ uv run --project apps/broker python scripts/live-mcp-check.py
+$ mnemos-agent credit
+{
+  "agent": "mnemos-agent-76badc8e.testnet",
+  "credit_yocto": "5000000000000000000000000",
+  "credit_near": "5"
+}
+$ mnemos-agent grants --owner mnemos-owner-76badc8e.testnet
+E_GRANT_NOT_FOUND: mnemos-owner-76badc8e.testnet has no grant for mnemos-agent-76badc8e.testnet
+The owner has not granted this agent access yet. Ask them to create a grant for this agent account.
+```
+
+The `grants` command reports the honest state of the chain: no grant exists
+yet, and the error carries the stable code and the next action.
 
 ## Decisions so far
 
