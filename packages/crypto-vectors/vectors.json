@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "protocol": "mnemos:v1",
+  "note": "Deterministic vectors for AES-256-GCM items, PBKDF2 owner wrap and X25519/HKDF broker wrap. TS and Python tests must reproduce and decrypt every vector.",
+  "owner": "mnemos-owner-76badc8e.testnet",
+  "ownerSalt": "00112233445566778899aabbccddeeff",
+  "passphrase": "correct horse battery staple — mnemos",
+  "pbkdf2Iterations": 600000,
+  "brokerPrivateKey": "c7e4eab8f57ff17f337ee22d86b40fc663c87ee8d58b030021404eeeae9174a5",
+  "brokerPublicKey": "222a2da3261f26dc82973d005100169aec5ae1d48a6adcb8ac65475e85c2076b",
+  "items": [
+    {
+      "itemId": "6f1c2a10-1b2c-4d3e-8f90-0123456789ab",
+      "scope": "travel",
+      "plaintextUtf8": "Flight to Lisbon on 14 March. Seat 12A. Hotel Baixa, check-in 15:00.",
+      "materials": {
+        "dek": "d66a959a7be18b6a00dfebaa32e8f8cee76d8a8655d938b6ee0d95b8f5a2a2fb",
+        "itemNonce": "7e6ee035fe5076f530239ffd",
+        "ownerWrapNonce": "af3e7efe54455e1d52c28aba",
+        "brokerEphemeralSecret": "325d9c0577780348c7bbc171caa0450814ac60e68b421191f07e96fe107d6c5f",
+        "brokerWrapNonce": "4fa131ad95940fc8b7d2d6e8"
+      },
+      "expected": {
+        "ciphertext": "366adca6d4a9891c1bdab3cfc934f98991a986a8097cc87654114325e7adbd37cbf47bd938061753dd5fadbc1e4731174dfb7fac6f34a21a2544efe8753be2d7802d0a1f571109c18dffc16e919b4c427e9c1d37",
+        "nonce": "7e6ee035fe5076f530239ffd",
+        "wrappedDekOwner": "af3e7efe54455e1d52c28aba432f4a89f3160094bfa7b38ed0c09a728c4fda6d0618233873a7fb015c19d8746a73195e13ab1333207258a482f87f8e",
+        "wrappedDekBroker": "7e433ca268ad064b6880ad0eee9e66de78ae12d7f7cbe35f309a4d0110d41b754fa131ad95940fc8b7d2d6e861522c6aa443de5b474f7c98d5360431aa4a1ca27ed385179ba09ff7fd634fd00b452d7c4ab67dfb72e713902e307b14",
+        "contentHash": "eb8b04e29590de7958a4e04c057c7d7b196f08ae3dbad8e2ca9bd0e67a2c433c"
+      }
+    },
+    {
+      "itemId": "7a2d3b21-2c3d-4e4f-9a01-123456789abc",
+      "scope": "work",
+      "plaintextUtf8": "Q3 planning notes:\n- ship the receipt ledger\n- redact agent prompts\n- review cap math",
+      "materials": {
+        "dek": "3d25f4e7ae5e6c3e337f5d75bd568428b997f7630249038b938d5c5e4290c6a7",
+        "itemNonce": "5c415f588091bcd77bdfb6e0",
+        "ownerWrapNonce": "667df0f945d4d8e1f652af09",
+        "brokerEphemeralSecret": "457512caa247ca75cc15228eba2a71c6f72e590bda92a6a2d4fcbfba3e885950",
+        "brokerWrapNonce": "6fef31e8fccbbd71f5112b1a"
+      },
+      "expected": {
+        "ciphertext": "73f27ad4aace6a4a69d00572c644a353bbd00e93b7e2db366a8f1429e6443e21c28a2911b8a68d9006e7dae37059ae07b025fac33372cba14297a57bc29dd63b78f3238289510c8d9760b82f5d12d45cc3a6ba61be24bf241722bf6e5709d9e06176e780b9",
+        "nonce": "5c415f588091bcd77bdfb6e0",
+        "wrappedDekOwner": "667df0f945d4d8e1f652af09f2cf9206cc349f3e3ba797a4f31bd55a4f1156f9aa7ab3f2822800e01399567c331ca4454a90c0f39e8985e3b16965f5",
+        "wrappedDekBroker": "46a931a840bcbc613cee2edbac1774bdd00674c31190b3c449050e9360dd16126fef31e8fccbbd71f5112b1af97fbc545bcc95b7c98532321caffbea934134932b77d0828071e438d40581f3039b7eb06f87e2a51abfe4d7e584b041",
+        "contentHash": "31c974663505bdfa95de85b47d27c18296c6477eb34a4c2ecda98fab78691eb4"
+      }
+    },
+    {
+      "itemId": "8b3e4c32-3d4e-4f50-ab12-23456789abcd",
+      "scope": "preferences",
+      "plaintextUtf8": "Grüße aus Zürich — 東京のホテルは駅の北口。Bring an umbrella.",
+      "materials": {
+        "dek": "b5db2a41b664eec0e351f241964541c50db84885c7530f2b69346ec1242bdb3a",
+        "itemNonce": "41d8f2e07f997b653bd94604",
+        "ownerWrapNonce": "672021322ea4c8959823b6d6",
+        "brokerEphemeralSecret": "7d637893b99e2df4eaef583c6c55d130786d1c8028b16b53d0ffc2f6d7cc159b",
+        "brokerWrapNonce": "f49eeccf89c9589836882695"
+      },
+      "expected": {
+        "ciphertext": "125b663372fc609769821e3fc47516262c13e53dac4d994da267626efe37926d32293bed009fc34c9a45b691aacfdb22024b26616db60d2cf153071469b6ccd31b34f3d7ae5fc2bccf205813328b08d9d4bc5f46f6aa79cedd1cf768da20",
+        "nonce": "41d8f2e07f997b653bd94604",
+        "wrappedDekOwner": "672021322ea4c8959823b6d63cad51951b22f639e5feb8e795a08ff63e9a08c89b0f1ddfcfc4c6fb4bafd5c787bace2aa913885d04757057ce430ca7",
+        "wrappedDekBroker": "7efc5f0c1d77e41babe20ee234ff3bc48c019e528d204005f11a2adc8b644706f49eeccf89c95898368826953ac75e28d4e140c66657bb0242756486839d34eccb740c2e8f84df2c307a5a89844df10e2f995456ff4031eb0b73ae69",
+        "contentHash": "3c9319c8ead2fc92f9a677e6e5d5f53dbdd81784c60eecc207885af7ccd1fefc"
+      }
+    }
+  ]
+}

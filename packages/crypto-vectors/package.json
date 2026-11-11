@@ -1,0 +1,15 @@
+{
+  "name": "@mnemos/crypto-vectors",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared Mnemos envelope-encryption test vectors for TypeScript and Python",
+  "license": "MIT",
+  "exports": {
+    ".": "./vectors.json",
+    "./vectors.json": "./vectors.json"
+  },
+  "files": [
+    "vectors.json"
+  ]
+}

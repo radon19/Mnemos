@@ -88,3 +88,31 @@ The `near-workspaces` suite covers cap exhaustion and verifies that re-creating
 a grant resets usage. This keeps the integration suite under a minute without
 dropping behavioural coverage.
 
+## D-009 — Envelope formats and cross-language vector strategy
+
+**Context.** The brief fixes AES-256-GCM, PBKDF2-HMAC-SHA256 at 600000
+iterations, X25519, and HKDF-SHA256, but leaves the byte layouts of the wrapped
+DEKs and the broker-wrap AAD open.
+
+**Decision.**
+
+- Item: 12-byte nonce stored separately, ciphertext||tag in `ciphertext`, AAD
+  `mnemos:v1|{owner}|{scope}|{item_id}`.
+- Owner-wrapped DEK: `nonce(12) | ciphertext(32) | tag(16)`; AAD
+  `mnemos:v1:wrap-owner|{item_id}`.
+- Broker-wrapped DEK: `ephemeral_public(32) | nonce(12) | ciphertext(32) |
+  tag(16)`; AAD `mnemos:v1:wrap-broker|{item_id}`; HKDF salt absent (RFC 5869
+  HashLen zeroes), info `mnemos:v1:wrap-broker`.
+- `content_hash` is lowercase hex SHA-256 of the stored ciphertext (including
+  the GCM tag), so the broker can verify stored bytes without seeing plaintext.
+- Broker fingerprint remains lowercase hex SHA-256 of the raw 32-byte X25519
+  public key.
+
+**Interop proof.** `packages/crypto-vectors/vectors.json` contains fixed
+randomness so both implementations must produce the exact same ciphertext,
+wraps and hash. TS has 21 tests and Python has 10; both re-encrypt every vector
+byte for byte and decrypt it with the owner passphrase and with the broker
+private key. Because the produced bytes are identical, either language can
+consume the other's envelopes.
+
+

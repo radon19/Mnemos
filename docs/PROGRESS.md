@@ -4,14 +4,15 @@ Updated: 2026-11-11
 
 ## Current phase
 
-Phase 3 — crypto packages. Phase 2 contract is deployed and verified on testnet.
+Phase 4 — broker. Phases 0–3 are complete: the contract is deployed and the
+crypto packages pass cross-language vectors.
 
 ## Phase checklist
 
 - [x] Phase 0 — preflight, four testnet accounts created, NEAR AI key stored
 - [x] Phase 1 — scaffold, compose, CI, Makefile, PRODUCT.md, DESIGN.md
 - [x] Phase 2 — contract, unit and sandbox tests, testnet deploy
-- [ ] Phase 3 — TS crypto, Python counterpart, shared vectors, interop
+- [x] Phase 3 — TS crypto, Python counterpart, shared vectors, interop
 - [ ] Phase 4 — broker: DB, auth, vault, ask pipeline, TEE, filter, sweeper, tests
 - [ ] Phase 5 — MCP server, agent CLI, tests, examples
 - [ ] Phase 6 — web screens, Playwright, axe
@@ -58,6 +59,18 @@ credit_of   -> 5000000000000000000000000
 - `cargo near build non-reproducible-wasm`: 252.7 KB wasm, checksum recorded above.
 - Broker Python: `ruff check`, `ruff format --check`, `mypy --strict` clean.
 - Broker signer view calls and all four deploy transactions confirmed on testnet.
+
+## Phase 3 verification
+
+- TypeScript `@mnemos/crypto`: build, typecheck and lint clean; 21 tests passed.
+- Python `mnemos_broker.crypto`: `ruff` clean, `mypy --strict` clean; 10 tests passed.
+- Three committed vectors in `packages/crypto-vectors/vectors.json` are
+  re-encrypted byte for byte by both languages and decrypted by both the owner
+  KEK and the broker X25519 key.
+- Tamper tests reject flipped item ciphertext, changed scope, owner or item id,
+  wrong passphrase, wrong salt, flipped owner/broker wrapped DEK, and a
+  mismatched content hash.
+
 
 ## Decisions so far
 
