@@ -65,3 +65,26 @@ judging or Playwright runs.
 `NEXT_PUBLIC_DEMO_MODE=true`, a clearly labelled local demo signer. The demo
 signer is disabled by default, never exposed to the client, documented as a
 local-only convenience, and never used for production claims.
+
+## D-007 — Build with `cargo near build non-reproducible-wasm` locally
+
+**Context.** `cargo near build` prompts through a TTY in this environment and
+fails with "The input device is not a TTY" when run from an agent shell.
+
+**Decision.** Local and testnet deployment use `cargo near build
+non-reproducible-wasm`. The artifact is pinned in `docs/VERIFICATION.md` by
+SHA-256. Reproducible builds remain available for a CI release job that has a
+TTY-free cargo-near configuration; they are not required for the hackathon
+deployment.
+
+## D-008 — Day-boundary behaviour is unit-tested; sandbox covers re-grant reset
+
+**Context.** Advancing the sandbox past a UTC day boundary with
+`fast_forward(86_400)` took about 832 seconds because it crosses many epochs.
+
+**Decision.** The next-day cap reset is covered by the unit test
+`daily_cap_blocks_then_resets_next_day`, which sets `block_timestamp` directly.
+The `near-workspaces` suite covers cap exhaustion and verifies that re-creating
+a grant resets usage. This keeps the integration suite under a minute without
+dropping behavioural coverage.
+
