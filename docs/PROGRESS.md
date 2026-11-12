@@ -30,7 +30,7 @@ Recorded in `.secrets/deployment.json` (never committed).
 - agent: `mnemos-agent-76badc8e.testnet`
 - broker: `mnemos-broker-76badc8e.testnet`
 - broker key fingerprint: `f15d7141fd619dd65cc7fac29cb5a3a11d642aaa47f6a00f757bfedf9e6eb0a4`
-- wasm SHA-256: `aa18000844e238db3c74f9cd1a384e0abc8caac30e73f46ea0b446035082f4c5`
+- wasm SHA-256: `8caf329964afaedd2df7c07a4c26c9c55de8829662abbb61dcbf274a5adf0907`
 - agent credit: 5 NEAR
 
 Transactions:
@@ -38,6 +38,7 @@ Transactions:
 | Step | Transaction |
 | --- | --- |
 | deploy | `DtQpji748V8hujxy9hrm4GppcPv21PNJQtqi4pXJP1Jh` |
+| deploy (with `grants_by_owner`) | `85mtN5AaSurqbmyy6CHP1hZ3Gwiqe3s39NSRTf3STARY` |
 | init | `EycciGFHbRS7CJS16K1DGrtRV5PzH1CHLgDJcoy3ALjT` |
 | set_broker | `2AQ12NtKN6EUHXdippirBDtbTry2GgRgdx9BiZNb8q5y` |
 | deposit_credit | `APgqZPysbq3sYq3BRU6NxrWvGxJHXHyfvQahCpgP4hB` |
@@ -59,7 +60,7 @@ credit_of   -> 5000000000000000000000000
   cap hit, re-grant reset, insufficient credit, double receipt, non-broker caller,
   refund, request expiry, paused, and withdrawal failure rollback.
 - `cargo clippy --all-targets -- -D warnings`: clean.
-- `cargo near build non-reproducible-wasm`: 252.7 KB wasm, checksum recorded above.
+- `cargo near build non-reproducible-wasm`: 260.7 KB wasm, checksum recorded above.
 - Broker Python: `ruff check`, `ruff format --check`, `mypy --strict` clean.
 - Broker signer view calls and all four deploy transactions confirmed on testnet.
 
@@ -186,6 +187,31 @@ yet, and the error carries the stable code and the next action.
   attacks instead of claiming they were blocked.
 - The live red-team run against the real model: six attacks, no answer carried
   twelve consecutive words of the memory.
+
+## Phase 10 — the missing features
+
+Everything the brief describes and the build did not have is now in place.
+
+- The contract gained `grants_by_owner`, so the Grants screen lists the
+  owner's grants from the chain. Unit tested, checked in the sandbox and
+  redeployed to testnet (`85mtN5AaSurqbmyy6CHP1hZ3Gwiqe3s39NSRTf3STARY`).
+- The owner can read their own notes in the browser: the vault is opened with
+  the owner wrap and the passphrase, in the tab, and the broker never sees
+  the plaintext.
+- The browser refuses to encrypt when the broker's key does not match the one
+  registered on chain, and says why.
+- Grants can be edited, and the contract has a pause switch in the interface.
+- Every hash has a copy control.
+- The red-team run is a background job: the endpoint returns immediately and
+  the browser polls, so no proxy cuts a forty-second request.
+- The broker's tables have a retention window, the logs are all JSON, the
+  broker image runs as a non-root user, compose caps the resources, and CI
+  runs `make check` the way a reviewer does.
+
+```text
+$ cd apps/broker && uv run pytest -q -m integration
+64 passed, 74 deselected in 10.18s
+```
 
 ## Phase 9 — responsive
 

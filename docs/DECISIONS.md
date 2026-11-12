@@ -216,7 +216,60 @@ minimum-release-age window. The API used by the MCP server (`Account`,
 in 7.4.0, all 32 tests pass against it, and the lockfile passes the
 supply-chain policy with no exclusions.
 
+## D-017 — The contract lists the owner's grants
 
+**Context.** The Grants screen has to show every grant an owner gave. With
+only `get_grant(owner, agent)` the browser could show a grant it knew the
+agent for, which meant keeping the list in local storage and losing it in
+another browser.
 
+**Decision.** Add a `grants_by_owner(owner)` view that returns the owner's
+grants, newest expiry first. The list is bounded by `MAX_GRANTS_PER_OWNER`,
+so it cannot grow without limit, and it is a view: it costs nothing to keep.
+The owner interface reads the chain and nothing else.
 
+## D-018 — The broker keeps a retention window, not everything
 
+**Context.** The brief asks for bounded collections. The broker's tables were
+growing: sign-in challenges were never removed, audit events accumulated
+forever and deleted vault items stayed as soft deletes.
+
+**Decision.** A retention job runs every hour and removes what is past its
+useful life: expired challenges after an hour, audit events after a month,
+deleted vault items after a month and read requests after a quarter. Nothing a
+read depends on is deleted, because the chain keeps the receipt ring and the
+activity feed merges both.
+
+## D-019 — The red-team run is a background job
+
+**Context.** Six attacks are six model calls, which takes about forty
+seconds. A single HTTP request that long is cut by proxies and leaves the
+browser waiting.
+
+**Decision.** `POST /v1/redteam/run` starts a job and returns its id;
+`GET /v1/redteam/run/{id}` reports the state and, when it is done, the
+report. The browser polls every two seconds and says how long the run takes.
+The run itself is unchanged: the same production prompt, the same filter, no
+chain writes.
+
+## D-020 — The browser refuses to encrypt for an unverified broker
+
+**Context.** The crypto section of the brief requires the web app to check
+that the broker's key fingerprint equals the one registered on chain before it
+encrypts. A note sealed for the wrong broker can never be read back.
+
+**Decision.** The vault reads the served fingerprint and the registered one.
+If they differ, or if the chain cannot be read to check, the browser refuses
+to encrypt and says why. The Setup screen shows the same comparison, so the
+owner can see it before it matters.
+
+## D-021 — The owner reads their own vault in the browser
+
+**Context.** The broker stores every item wrapped twice: once for the owner
+and once for the broker. Until now the browser only ever wrote them.
+
+**Decision.** The owner wrap is enough to open an item locally, so the Vault
+screen offers a Read action that decrypts with the passphrase in the tab.
+Nothing is decrypted on the server, the passphrase is never stored, and the
+broker never sees the plaintext. The broker does not hand out its own wrap,
+because the owner does not need it.

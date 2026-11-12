@@ -83,13 +83,13 @@ $ cd contracts/mnemos && cargo clippy --all-targets -- -D warnings
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 15.50s
 
 $ cd contracts/mnemos && cargo near build non-reproducible-wasm
-     -                  Size: 252.7 KB (252650 bytes)
-     - SHA-256 checksum hex : aa18000844e238db3c74f9cd1a384e0abc8caac30e73f46ea0b446035082f4c5
+     -                  Size: 260.7 KB (260740 bytes)
+     - SHA-256 checksum hex : 8caf329964afaedd2df7c07a4c26c9c55de8829662abbb61dcbf274a5adf0907
      - SHA-256 checksum bs58: CSyXzu8UtBYNtphRbZ6M4o2wkYLQgEAgM3LjhccYPstp
      Finished cargo near build in 0s
 
 $ sha256sum target/near/mnemos_contract.wasm
-aa18000844e238db3c74f9cd1a384e0abc8caac30e73f46ea0b446035082f4c5  target/near/mnemos_contract.wasm
+8caf329964afaedd2df7c07a4c26c9c55de8829662abbb61dcbf274a5adf0907  target/near/mnemos_contract.wasm
 ```
 
 Testnet state, read back with independent view calls:

@@ -33,6 +33,7 @@ from .config import Settings, get_settings
 from .db import create_engine, create_session_factory
 from .errors import E_BAD_REQUEST, E_INTERNAL, E_NOT_FOUND, E_PAYLOAD_TOO_LARGE, MnemosError
 from .inference import InferenceProtocol, NearAiInferenceEngine
+from .jobs import JobRegistry
 from .logging import configure_logging
 from .pipeline import AskPipeline
 from .ratelimit import RateLimiter
@@ -157,6 +158,7 @@ def create_app(
 
     publisher = ActivityPublisher()
     limiter = RateLimiter()
+    jobs = JobRegistry()
     pipeline = AskPipeline(
         settings=configured,
         session_factory=session_factory,
@@ -193,6 +195,7 @@ def create_app(
         inference=inference,
         publisher=publisher,
         limiter=limiter,
+        jobs=jobs,
         pipeline=pipeline,
         redteam=RedteamRunner(pipeline, configured.nearai_model),
         sweeper=sweeper,
@@ -222,6 +225,7 @@ def create_app(
                     await asyncio.wait_for(task, timeout=5.0)
                 if not task.done():
                     task.cancel()
+            await services.jobs.close()
             if services.owns_inference:
                 await services.inference.close()
             if services.owns_chain:

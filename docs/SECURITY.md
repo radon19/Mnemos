@@ -139,9 +139,15 @@ itself to call `expire_request`.
 - Logs are structured JSON with no plaintext fields.
 - The broker refuses request bodies above 32 KiB, and the vault enforces a
   16 KiB item limit.
-- Rate limits are per instance: 20 sign-ins and 10 reads a minute by
+- Rate limits are per instance: 60 sign-ins and 10 reads a minute by
   default, 3 red-team runs a minute. A multi-replica deployment needs a
-  shared limiter, and the activity stream needs a shared bus.
+  shared limiter, and the activity stream needs a shared bus. The compose
+  file runs one broker for that reason.
+- Retention bounds the broker's tables: sign-in challenges are dropped after
+  an hour, audit events after a month, deleted vault items after a month and
+  read requests after a quarter.
+- The container images run as non-root users, and compose caps each service
+  at 768 MB and one CPU.
 - The demo signer is disabled unless the server has `DEMO_OWNER_SECRET_KEY`
   and the client has `NEXT_PUBLIC_DEMO_MODE=true`. It exists so the flow can
   be shown without a browser wallet, and it is labelled as a demo session in

@@ -1,14 +1,14 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { Notice } from "@/components/Notice";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusMark, type StatusKind } from "@/components/StatusMark";
-import { brokerApi, type RedteamAttack } from "@/lib/broker";
+import { brokerApi, type RedteamAttack, type RedteamReport } from "@/lib/broker";
 import { describeError, useSession } from "@/lib/session";
 
 const SCOPES = ["travel", "health", "work", "preferences"];
@@ -26,10 +26,64 @@ export default function RedteamPage(): React.ReactNode {
   const [scope, setScope] = useState(SCOPES[0] ?? "travel");
 
   const run = useMutation({
-    mutationFn: async () => await brokerApi.redteam(scope),
+    mutationFn: async () => await brokerApi.startRedteam(scope),
   });
 
-  const report = run.data;
+  const [report, setReport] = useState<RedteamReport | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
+  const jobId = useRef<string | null>(null);
+
+  /**
+   * The run takes about forty seconds, so it happens in the broker and the
+   * browser polls for the result instead of holding one request open.
+   */
+  useEffect(() => {
+    const id = jobId.current;
+    if (id === null) {
+      return;
+    }
+    let cancelled = false;
+    const timer = setInterval(() => {
+      void (async () => {
+        try {
+          const status = await brokerApi.redteamStatus(id);
+          if (cancelled) {
+            return;
+          }
+          if (status.status === "done" && status.result !== null) {
+            setReport(status.result);
+            setRunError(null);
+            jobId.current = null;
+            clearInterval(timer);
+          } else if (status.status === "failed") {
+            setRunError(status.error ?? "the run failed");
+            jobId.current = null;
+            clearInterval(timer);
+          }
+        } catch (error) {
+          if (!cancelled) {
+            setRunError(describeError(error));
+            jobId.current = null;
+            clearInterval(timer);
+          }
+        }
+      })();
+    }, 2_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [run.isPending, report]);
+
+  const start = (): void => {
+    setReport(null);
+    setRunError(null);
+    run.mutate(undefined, {
+      onSuccess: (started) => {
+        jobId.current = started.job_id;
+      },
+    });
+  };
 
   return (
     <div className="space-y-10 pb-16">
@@ -67,23 +121,34 @@ export default function RedteamPage(): React.ReactNode {
             </select>
           </label>
           <Button
-            onClick={() => {
-              run.mutate();
-            }}
-            disabled={status !== "signed-in" || run.isPending}
+            onClick={start}
+            disabled={status !== "signed-in" || run.isPending || jobId.current !== null}
           >
-            {run.isPending ? "Running the attacks…" : "Run the attack set"}
+            {run.isPending || jobId.current !== null
+              ? "Running the attacks…"
+              : "Run the attack set"}
           </Button>
+          {run.isPending || jobId.current !== null ? (
+            <p className="text-caption text-muted" aria-live="polite">
+              Six attacks, six model calls. This takes about forty seconds; the result
+              appears here when it is ready.
+            </p>
+          ) : null}
           {status !== "signed-in" ? (
             <p className="text-caption text-muted">
               Sign in first: the run reads your own vault through the broker.
             </p>
           ) : null}
           {run.isError ? (
-            <Notice tone="error" title="The run did not finish">
+            <Notice tone="error" title="The run did not start">
               {describeError(run.error)}
             </Notice>
           ) : null}
+          {runError === null ? null : (
+            <Notice tone="error" title="The run did not finish">
+              {runError}
+            </Notice>
+          )}
         </section>
 
         <section aria-labelledby="results" className="card min-w-0 px-5 py-5">
@@ -91,7 +156,7 @@ export default function RedteamPage(): React.ReactNode {
             Results
           </h2>
 
-          {report === undefined ? (
+          {report === null ? (
             <EmptyState
               title="No run yet"
               body="Run the attack set to see which extraction attempts the filter stops and which remain a residual risk."

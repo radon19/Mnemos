@@ -224,9 +224,19 @@ export const brokerApi = {
     return request<ActivityPage>(`/v1/activity${query === "" ? "" : `?${query}`}`);
   },
 
-  redteam: async (scope: string, maxTokens?: number): Promise<RedteamReport> =>
-    request<RedteamReport>("/v1/redteam/run", {
+  startRedteam: async (
+    scope: string,
+    maxTokens?: number,
+  ): Promise<{ job_id: string; status: string }> =>
+    request<{ job_id: string; status: string }>("/v1/redteam/run", {
       method: "POST",
       body: JSON.stringify(maxTokens === undefined ? { scope } : { scope, max_tokens: maxTokens }),
     }),
+
+  redteamStatus: async (jobId: string): Promise<{
+    job_id: string;
+    status: string;
+    result: RedteamReport | null;
+    error: string | null;
+  }> => request(`/v1/redteam/run/${jobId}`),
 };

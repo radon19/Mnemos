@@ -57,6 +57,19 @@ The broker's database holds ciphertext and evidence, never plaintext.
 Prices are `numeric(78, 0)`, because a NEAR price is a u128 amount of
 yoctoNEAR and does not fit in a signed 64-bit integer.
 
+Nothing grows without bound either. A retention job removes expired sign-in
+challenges after an hour, audit events after a month, deleted vault items after
+a month and read requests after a quarter. The chain keeps the receipt ring, so
+the history of a read never disappears, only the broker's copy of the
+bookkeeping.
+
+## The views
+
+`get_grant`, `get_request`, `credit_of`, `earnings_of`, `get_broker` and
+`recent_receipts` answer single questions. `grants_by_owner` answers the one
+the owner interface could not do without: it lists every grant an owner gave,
+so the Grants screen shows the same list in every browser and on chain.
+
 ## The envelope
 
 ```text
@@ -91,7 +104,8 @@ agree.
 | `POST /v1/ask` | agent | The signed read request. |
 | `GET /v1/activity` | owner | The merged broker and chain read ledger. |
 | `GET /v1/activity/stream` | owner | The same ledger as server-sent events. |
-| `POST /v1/redteam/run` | owner | The attack set against the owner's own vault. |
+| `POST /v1/redteam/run` | owner | Starts the attack set as a background job and returns its id. |
+| `GET /v1/redteam/run/{job_id}` | owner | The state of a red-team job and, when it is done, the report. |
 | `GET /healthz`, `GET /readyz` | anyone | Liveness and readiness. |
 
 Every error carries a stable code (`E_GRANT_REVOKED`, `E_SCOPE_DENIED`,

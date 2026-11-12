@@ -10,6 +10,7 @@ from .activity import ActivityPublisher
 from .chain import ChainProtocol
 from .config import Settings
 from .inference import InferenceProtocol
+from .jobs import JobRegistry
 from .pipeline import AskPipeline
 from .ratelimit import RateLimiter
 from .redteam import RedteamRunner
@@ -25,6 +26,7 @@ class Services:
     inference: InferenceProtocol
     publisher: ActivityPublisher
     limiter: RateLimiter
+    jobs: JobRegistry
     pipeline: AskPipeline
     redteam: RedteamRunner
     sweeper: Sweeper | None

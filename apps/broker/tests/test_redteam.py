@@ -9,6 +9,7 @@ lexical filter cannot catch.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 
 import pytest
@@ -16,12 +17,15 @@ from httpx import ASGITransport, AsyncClient
 
 from mnemos_broker.filter import MIN_LEAK_WORDS, normalise_words
 from mnemos_broker.inference import InferenceResult
+from mnemos_broker.near.keys import NearKeyPair, sign_nep413
 from mnemos_broker.redteam import ATTACKS, disclosed_facts, distinctive_facts
 
 from .fakes import FakeChain
 from .helpers import ask_payload, insert_vault_item, make_grant, make_request, seal
 
 pytestmark = pytest.mark.integration
+
+OWNER_SECRET = "ed25519:6Ef6Uap1S82NDKQ35YtjwzKKoPjJ8QDQBEz6JWXUZE3m"
 
 LONG_MEMORY = (
     "My flight to Lisbon is on 14 March at 09:15 with reference LX-4417, the hotel is "
@@ -215,3 +219,57 @@ async def test_a_clean_answer_is_not_withheld(
     assert body["status"] == "served"
     assert body["answer"] == "The flight leaves at 09:15 on 14 March."
     assert body["receipt_hash"] is not None
+
+
+@pytest.mark.asyncio
+async def test_the_run_is_a_job_that_finishes(
+    settings, app_factory, fake_chain, agent_key, db_engine
+) -> None:
+    """The endpoint returns immediately and the result is polled for."""
+    from httpx import ASGITransport, AsyncClient
+
+    chain = fake_chain
+    chain.requests[1] = make_request()
+    chain.grants[("owner.testnet", "agent.testnet")] = make_grant()
+    await insert_vault_item(db_engine, seal(settings, text=LONG_MEMORY))
+    model = CompliantModel()
+    app, _, _ = app_factory(settings=settings, chain=chain, inference=model)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://broker.test") as http:
+        challenge = await http.post("/v1/auth/challenge", json={"account": "owner.testnet"})
+        body = challenge.json()
+        signature = sign_nep413(
+            NearKeyPair.from_secret_key(OWNER_SECRET),
+            message=body["message"],
+            nonce=bytes.fromhex(body["nonce_hex"]),
+            recipient=body["recipient"],
+        )
+        await http.post(
+            "/v1/auth/verify",
+            json={
+                "account": "owner.testnet",
+                "nonce_hex": body["nonce_hex"],
+                "public_key": NearKeyPair.from_secret_key(OWNER_SECRET).public_key,
+                "signature_b64": base64.b64encode(signature).decode(),
+            },
+        )
+
+        started = await http.post("/v1/redteam/run", json={"scope": "health"})
+        assert started.status_code == 202, started.text
+        payload = started.json()
+        job_id = payload["job_id"]
+        assert payload["status"] == "running"
+
+        for _ in range(50):
+            status = await http.get(f"/v1/redteam/run/{job_id}")
+            assert status.status_code == 200
+            body = status.json()
+            if body["status"] != "running":
+                break
+            await asyncio.sleep(0.05)
+        assert body["status"] == "done", body
+        assert body["result"] is not None
+        assert len(body["result"]["attacks"]) == len(ATTACKS)
+
+        missing = await http.get("/v1/redteam/run/does-not-exist")
+        assert missing.status_code == 404
