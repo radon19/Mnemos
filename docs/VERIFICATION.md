@@ -272,6 +272,18 @@ $ impeccable detect http://127.0.0.1:3000/redteam    # no findings
 The single advisory finding is the numbered setup steps, kept because the
 sequence carries the meaning. The reasoning is in `docs/DESIGN_REVIEW.md`.
 
+## Phase 9 — responsive
+
+```text
+$ cd apps/web && pnpm exec playwright test
+  81 passed (8.0m)
+```
+
+The whole browser suite: axe-core on seven screens at three widths, the owner
+flows against a live broker, and a responsive sweep that walks every screen at
+thirteen widths from 320 to 1920 pixels and fails on sideways scrolling,
+clipped text or a touch target under 30 pixels.
+
 ## Phase 8 — frontend redesign
 
 ```text
