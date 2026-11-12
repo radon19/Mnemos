@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 export interface LedgerColumn<T> {
   key: string;
@@ -17,6 +17,8 @@ export interface LedgerTableProps<T> {
   rowKey: (row: T) => string;
   onRowClick?: (row: T) => void;
   actions?: { header: string; render: (row: T) => ReactNode };
+  /** Extra content under a row, for example the decrypted note. */
+  expanded?: (row: T) => ReactNode;
   /** Applied to a row, for example when a receipt has just arrived. */
   rowClassName?: (row: T) => string | undefined;
   empty?: ReactNode;
@@ -37,6 +39,7 @@ export function LedgerTable<T>({
   rowKey,
   onRowClick,
   actions,
+  expanded,
   rowClassName,
   empty,
 }: LedgerTableProps<T>): ReactNode {
@@ -74,30 +77,44 @@ export function LedgerTable<T>({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr
-                key={rowKey(row)}
-                onClick={
-                  onRowClick === undefined
-                    ? undefined
-                    : () => {
-                        onRowClick(row);
-                      }
-                }
-                className={`${onRowClick === undefined ? "" : "cursor-pointer hover:bg-sunken"} ${
-                  rowClassName === undefined ? "" : (rowClassName(row) ?? "")
-                }`}
-              >
-                {columns.map((column) => (
-                  <td key={column.key} className="border-b border-rule py-3 pr-4 align-top last:pr-0">
-                    {column.render(row)}
-                  </td>
-                ))}
-                {actions === undefined ? null : (
-                  <td className="border-b border-rule py-3 text-right align-top">
-                    {actions.render(row)}
-                  </td>
+              <Fragment key={rowKey(row)}>
+                <tr
+                  onClick={
+                    onRowClick === undefined
+                      ? undefined
+                      : () => {
+                          onRowClick(row);
+                        }
+                  }
+                  className={`${onRowClick === undefined ? "" : "cursor-pointer hover:bg-sunken"} ${
+                    rowClassName === undefined ? "" : (rowClassName(row) ?? "")
+                  }`}
+                >
+                  {columns.map((column) => (
+                    <td
+                      key={column.key}
+                      className="border-b border-rule py-3 pr-4 align-top last:pr-0"
+                    >
+                      {column.render(row)}
+                    </td>
+                  ))}
+                  {actions === undefined ? null : (
+                    <td className="border-b border-rule py-3 text-right align-top">
+                      {actions.render(row)}
+                    </td>
+                  )}
+                </tr>
+                {expanded === undefined ? null : (
+                  <tr>
+                    <td
+                      colSpan={columns.length + (actions === undefined ? 0 : 1)}
+                      className="border-b border-rule px-1 py-3"
+                    >
+                      {expanded(row)}
+                    </td>
+                  </tr>
                 )}
-              </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -130,8 +147,11 @@ export function LedgerTable<T>({
                 Open the evidence
               </button>
             )}
+            {expanded === undefined ? null : (
+              <div className="mt-3 border-t border-rule pt-3">{expanded(row)}</div>
+            )}
             {actions === undefined ? null : (
-              <div className="mt-3 border-t border-rule pt-3">{actions.render(row)}</div>
+              <div className="mt-3">{actions.render(row)}</div>
             )}
           </li>
         ))}

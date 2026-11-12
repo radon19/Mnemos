@@ -303,6 +303,56 @@ export function openItemWithOwner(input: OpenItemWithOwnerInput): Uint8Array {
   return openItemWithKek({ envelope: input.envelope, kek });
 }
 
+export interface OwnerEnvelope {
+  itemId: string;
+  owner: string;
+  scope: string;
+  ciphertext: Uint8Array;
+  nonce: Uint8Array;
+  wrappedDekOwner: Uint8Array;
+  contentHash: string;
+}
+
+/**
+ * Open an item with the owner's passphrase.
+ *
+ * This is the path the browser uses to read the owner's own vault: the broker
+ * never hands out the broker wrap, so the owner wrap is all that is needed.
+ */
+export function openOwnerItem(
+  envelope: OwnerEnvelope,
+  passphrase: string,
+  ownerSalt: Uint8Array,
+): Uint8Array {
+  const kek = deriveOwnerKek(passphrase, ownerSalt);
+  const dek = unwrapOwnerDek(
+    {
+      itemId: envelope.itemId,
+      owner: envelope.owner,
+      scope: envelope.scope,
+      ciphertext: envelope.ciphertext,
+      nonce: envelope.nonce,
+      wrappedDekOwner: envelope.wrappedDekOwner,
+      wrappedDekBroker: new Uint8Array(0),
+      contentHash: envelope.contentHash,
+    },
+    kek,
+  );
+  return decryptItem(
+    {
+      itemId: envelope.itemId,
+      owner: envelope.owner,
+      scope: envelope.scope,
+      ciphertext: envelope.ciphertext,
+      nonce: envelope.nonce,
+      wrappedDekOwner: envelope.wrappedDekOwner,
+      wrappedDekBroker: new Uint8Array(0),
+      contentHash: envelope.contentHash,
+    },
+    dek,
+  );
+}
+
 export function openItemWithKek(input: OpenItemWithKekInput): Uint8Array {
   assertKeyLength("owner KEK", input.kek, DEK_BYTES);
   const { envelope } = input;

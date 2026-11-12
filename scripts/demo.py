@@ -24,8 +24,9 @@ import base64
 import json
 import os
 import pathlib
-import subprocess
+import shutil
 import sys
+import time
 import uuid
 from typing import Any
 
@@ -34,9 +35,9 @@ import httpx
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "apps" / "broker" / "src"))
 
-from mnemos_broker.crypto import seal_item  # noqa: E402
-from mnemos_broker.near.client import NearClient  # noqa: E402
-from mnemos_broker.near.keys import NearKeyPair, sign_nep413  # noqa: E402
+from mnemos_broker.crypto import seal_item
+from mnemos_broker.near.client import NearClient
+from mnemos_broker.near.keys import NearKeyPair, sign_nep413
 
 BROKER_URL = os.environ.get("MNEMOS_BROKER_URL", "http://localhost:8000").rstrip("/")
 RPC_URL = os.environ.get("NEAR_RPC_URL", "https://test.rpc.fastnear.com")
@@ -67,15 +68,31 @@ def load_accounts() -> dict[str, Any]:
     return data
 
 
+async def wait_for_broker(client: httpx.AsyncClient, timeout_seconds: int = 120) -> None:
+    """Wait until the broker is ready, so `make demo` can start the stack."""
+    deadline = time.monotonic() + timeout_seconds
+    last = "no answer"
+    while time.monotonic() < deadline:
+        try:
+            response = await client.get("/readyz")
+            if response.status_code == 200:
+                return
+            last = f"HTTP {response.status_code}"
+        except httpx.HTTPError as error:
+            last = str(error)
+        await asyncio.sleep(2)
+    raise SystemExit(f"the broker did not become ready ({last})")
+
+
 async def broker_session(accounts: dict[str, Any]) -> httpx.AsyncClient:
     client = httpx.AsyncClient(base_url=BROKER_URL, timeout=60.0)
-    health = await client.get("/healthz")
-    if health.status_code != 200:
-        raise SystemExit(f"the broker is not healthy ({health.status_code}); start it first")
+    await wait_for_broker(client)
 
     owner = accounts["owner"]
     key = NearKeyPair.from_secret_key(owner["secret_key"])
-    challenge = (await client.post("/v1/auth/challenge", json={"account": owner["account_id"]})).json()
+    challenge = (
+        await client.post("/v1/auth/challenge", json={"account": owner["account_id"]})
+    ).json()
     signature = sign_nep413(
         key,
         message=challenge["message"],
@@ -127,7 +144,10 @@ async def store_note(client: httpx.AsyncClient, accounts: dict[str, Any]) -> str
     response = await client.post("/v1/vault/items", json=payload)
     if response.status_code != 201:
         raise SystemExit(f"the broker refused the note: {response.text}")
-    info(f"note {envelope.item_id[:8]} sealed and stored (content hash {envelope.content_hash[:16]}…)")
+    info(
+        f"note {envelope.item_id[:8]} sealed and stored "
+        f"(content hash {envelope.content_hash[:16]}…)"
+    )
     info(f"broker fingerprint {identity['fingerprint'][:16]}…")
     return envelope.item_id
 
@@ -166,25 +186,26 @@ async def ask(accounts: dict[str, Any], question: str) -> tuple[int, dict[str, A
         "MNEMOS_BROKER_RECIPIENT": BROKER_URL.replace("http://", "").replace("https://", ""),
         "NEAR_RPC_URL": RPC_URL,
     }
-    result = subprocess.run(
-        [
-            "node",
-            str(ROOT / "apps" / "mcp" / "dist" / "cli.js"),
-            "ask",
-            "--owner",
-            accounts["owner"]["account_id"],
-            "--scope",
-            SCOPE,
-            question,
-        ],
+    node = shutil.which("node")
+    if node is None:
+        raise SystemExit("node is not on the PATH")
+    process = await asyncio.create_subprocess_exec(
+        node,
+        str(ROOT / "apps" / "mcp" / "dist" / "cli.js"),
+        "ask",
+        "--owner",
+        accounts["owner"]["account_id"],
+        "--scope",
+        SCOPE,
+        question,
         env=environment,
-        capture_output=True,
-        text=True,
-        check=False,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
     )
-    if result.returncode != 0:
-        return result.returncode, {"error": result.stderr.strip()}
-    return 0, json.loads(result.stdout)
+    stdout, stderr = await process.communicate()
+    if process.returncode != 0:
+        return process.returncode or 1, {"error": stderr.decode().strip()}
+    return 0, json.loads(stdout.decode())
 
 
 async def show_receipts(accounts: dict[str, Any]) -> None:

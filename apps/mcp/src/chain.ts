@@ -62,8 +62,10 @@ export interface ChainClient {
   getRequest(reqId: number): Promise<RequestView | null>;
   getGrant(owner: string, agent: string): Promise<GrantView | null>;
   getConfig(): Promise<ConfigView>;
+  getRequestTtlNs(): Promise<bigint>;
   creditOf(agent: string): Promise<string>;
   requestRead(owner: string, scope: string, qHash: string): Promise<number>;
+  expireRequest(reqId: number): Promise<string>;
 }
 
 function describe(error: unknown): string {
@@ -123,6 +125,12 @@ export class NearChainClient implements ChainClient {
 
   async getGrant(owner: string, agent: string): Promise<GrantView | null> {
     return await this.view<GrantView>("get_grant", { owner, agent });
+  }
+
+  /** The request window in nanoseconds, as the contract reports it. */
+  async getRequestTtlNs(): Promise<bigint> {
+    const config = await this.getConfig();
+    return BigInt(config.request_ttl_ns);
   }
 
   async getConfig(): Promise<ConfigView> {
@@ -192,5 +200,42 @@ export class NearChainClient implements ChainClient {
       `the read request was created but could not be found on chain (ids ${before}..${after - 1})`,
       hintFor("E_RPC_ERROR"),
     );
+  }
+
+  /**
+   * Expire a read request that was never served.
+   *
+   * The call is permissionless: anyone may return the credit of a request
+   * that passed its window. The agent calls it when it finds its own request
+   * expired, so a request that was created and never asked for does not hold
+   * the credit.
+   */
+  async expireRequest(reqId: number): Promise<string> {
+    try {
+      const response = await this.account.signAndSendTransaction({
+        receiverId: this.options.contractId,
+        actions: [
+          actions.functionCall(
+            "expire_request",
+            { req_id: reqId },
+            this.options.requestGas,
+          ),
+        ],
+        waitUntil: "FINAL",
+        throwOnFailure: false,
+      });
+      const status = response.status;
+      if (typeof status === "object" && "Failure" in status) {
+        const failure = JSON.stringify(status.Failure);
+        const code = extractContractCode(failure) ?? "E_RPC_ERROR";
+        throw new MnemosToolError(code, failure, hintFor(code));
+      }
+    } catch (error) {
+      if (error instanceof MnemosToolError) {
+        throw error;
+      }
+      throw chainError(error);
+    }
+    return `expired request ${reqId}`;
   }
 }

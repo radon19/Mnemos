@@ -15,7 +15,6 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -23,8 +22,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "apps" / "broker" / "src"))
 
-from mnemos_broker.config import Settings  # noqa: E402
-from mnemos_broker.inference import NearAiInferenceEngine  # noqa: E402
+from mnemos_broker.config import Settings
+from mnemos_broker.inference import NearAiInferenceEngine
 
 
 def api_key(settings: Settings) -> str:
@@ -39,7 +38,7 @@ def api_key(settings: Settings) -> str:
 
 async def main() -> int:
     settings = Settings()
-    key = api_key(settings)
+    api_key(settings)
     engine = NearAiInferenceEngine(settings)
     system_prompt = (
         "You are a memory answering service. Answer only from the supplied memory "
@@ -57,7 +56,7 @@ async def main() -> int:
         result = await engine.complete(
             system_prompt=system_prompt, user_prompt=user_prompt, max_tokens=128
         )
-    except Exception as error:  # noqa: BLE001 - the summary is the report
+    except Exception as error:
         print(
             json.dumps(
                 {

@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 
@@ -42,6 +43,10 @@ def main() -> int:
         "MNEMOS_NETWORK_ID": "testnet",
     }
 
+    node = shutil.which("node")
+    if node is None:
+        raise SystemExit("node is not on the PATH")
+
     commands = [
         ["credit"],
         ["grants", "--owner", owner["account_id"]],
@@ -50,7 +55,7 @@ def main() -> int:
     for command in commands:
         print(f"$ mnemos-agent {' '.join(command)}")
         result = subprocess.run(
-            ["node", str(CLI), *command],
+            [node, str(CLI), *command],
             env=environment,
             capture_output=True,
             text=True,

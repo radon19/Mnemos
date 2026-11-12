@@ -31,13 +31,19 @@ class FakeChain implements ChainClient {
   readonly readCalls: { owner: string; scope: string; qHash: string }[] = [];
   requestError: Error | null = null;
   status = "Approved";
+  /** Set to make the request look older than the contract's window. */
+  ageNs = 0n;
 
   async getRequest(reqId: number): Promise<RequestView | null> {
     const found = this.requests.find((request) => request.id === reqId);
     if (found === undefined) {
       return null;
     }
-    return { ...found, status: this.status };
+    return {
+      ...found,
+      status: this.status,
+      created_ns: String(BigInt(found.created_ns) - this.ageNs),
+    };
   }
 
   async getGrant(owner: string, agent: string): Promise<GrantView | null> {
@@ -70,6 +76,17 @@ class FakeChain implements ChainClient {
     return "5000000000000000000000000";
   }
 
+  async getRequestTtlNs(): Promise<bigint> {
+    return 600_000_000_000n;
+  }
+
+  readonly expired: number[] = [];
+
+  async expireRequest(reqId: number): Promise<string> {
+    this.expired.push(reqId);
+    return `expired request ${reqId}`;
+  }
+
   async requestRead(owner: string, scope: string, qHash: string): Promise<number> {
     if (this.requestError !== null) {
       throw this.requestError;
@@ -83,7 +100,7 @@ class FakeChain implements ChainClient {
       price: "10000000000000000000000",
       q_hash: qHash,
       status: "Approved",
-      created_ns: "1",
+      created_ns: String(BigInt(Date.now()) * 1_000_000n),
       receipt_hash: null,
     };
     this.requests.push(request);
@@ -323,5 +340,42 @@ describe("check_credit", () => {
     const result = await checkCredit(deps(new FakeChain(), new FakeBroker()));
     expect(result.credit_yocto).toBe("5000000000000000000000000");
     expect(result.credit_near).toBe("5");
+  });
+});
+
+describe("expired requests", () => {
+  it("returns the credit when the request passed its window", async () => {
+    const chain = new FakeChain();
+    chain.ageNs = 1_000_000_000_000n; // one second past the window
+    const broker = new FakeBroker();
+    const deps = {
+      config: CONFIG,
+      chain,
+      broker,
+      signer: new AgentSigner(SECRET_KEY),
+    };
+    await expect(
+      askMemory(deps, { owner: "owner.testnet", scope: "travel", question: "hi" }),
+    ).rejects.toMatchObject({ code: "E_REQUEST_EXPIRED" });
+    expect(chain.expired).toEqual([1]);
+    expect(broker.bodies).toHaveLength(0);
+  });
+
+  it("serves a request that is still inside its window", async () => {
+    const chain = new FakeChain();
+    const broker = new FakeBroker();
+    const deps = {
+      config: CONFIG,
+      chain,
+      broker,
+      signer: new AgentSigner(SECRET_KEY),
+    };
+    const result = await askMemory(deps, {
+      owner: "owner.testnet",
+      scope: "travel",
+      question: "hi",
+    });
+    expect(result.status).toBe("served");
+    expect(chain.expired).toEqual([]);
   });
 });

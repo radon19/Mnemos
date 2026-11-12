@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     max_question_chars: int = Field(default=2000, ge=1, le=8000)
     sweeper_interval_seconds: int = Field(default=60, ge=10, le=3600)
     sweeper_enabled: bool = True
+    retention_enabled: bool = True
+    retention_interval_seconds: int = Field(default=3600, ge=60, le=86_400)
     max_vault_items: int = Field(default=500, ge=1, le=10_000)
     redteam_rate_limit_per_minute: int = Field(default=3, ge=1, le=60)
     log_level: str = "INFO"

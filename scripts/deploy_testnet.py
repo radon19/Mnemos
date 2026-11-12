@@ -151,7 +151,7 @@ async def main() -> int:
         DEPLOYMENT_FILE.write_text(json.dumps(deployment, indent=2) + "\n", encoding="utf-8")
         os.chmod(DEPLOYMENT_FILE, 0o600)
 
-        print("")
+        print()
         print(f"contract id: {contract}")
         print(f"owner:       {owner}")
         print(f"agent:       {agent}")

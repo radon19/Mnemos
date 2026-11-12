@@ -124,6 +124,24 @@ async function waitForApproved(
       );
     }
     if (request.status === "Approved") {
+      // A request that passed its window can still be expired by anyone, and
+      // the contract returns the credit when that happens. Expiring it here
+      // is what keeps an unused request from holding the agent's money.
+      const ttlNs = await deps.chain.getRequestTtlNs();
+      const createdNs = BigInt(request.created_ns);
+      if (BigInt(Date.now()) * 1_000_000n > createdNs + ttlNs) {
+        try {
+          await deps.chain.expireRequest(reqId);
+        } catch {
+          // The expiry is permissionless; if it fails the request still ages
+          // out on chain and the agent is told what happened.
+        }
+        throw new MnemosToolError(
+          "E_REQUEST_EXPIRED",
+          `read request ${reqId} passed its window; the credit was returned`,
+          hintFor("E_REQUEST_EXPIRED"),
+        );
+      }
       return;
     }
     if (request.status !== "Pending") {

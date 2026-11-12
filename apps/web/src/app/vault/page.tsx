@@ -11,6 +11,7 @@ import { LedgerTable } from "@/components/LedgerTable";
 import { Notice } from "@/components/Notice";
 import { PageHeader } from "@/components/PageHeader";
 import { BrokerError, brokerApi, type VaultItem } from "@/lib/broker";
+import { decryptVaultItem } from "@/lib/decrypt";
 import { formatTimestamp } from "@/lib/format";
 import { describeError, useSession } from "@/lib/session";
 import {
@@ -33,6 +34,8 @@ export default function VaultPage(): React.ReactNode {
   const [passphraseInput, setPassphraseInput] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState<Record<string, string>>({});
+  const [revealFailure, setRevealFailure] = useState<string | null>(null);
 
   const identity = useQuery({
     queryKey: ["broker-identity"],
@@ -46,6 +49,36 @@ export default function VaultPage(): React.ReactNode {
     retry: false,
     enabled: status === "signed-in",
   });
+
+  const salt = useQuery({
+    queryKey: ["vault-salt"],
+    queryFn: async () => brokerApi.vaultSalt(),
+    retry: false,
+    enabled: status === "signed-in",
+  });
+
+  /**
+   * Open a note with the owner's passphrase, in this tab. The broker never
+   * sees the plaintext and the passphrase never leaves the browser.
+   */
+  const reveal = (item: VaultItem): void => {
+    const secret = passphrase();
+    if (secret === null) {
+      setRevealFailure("unlock the vault to read a note");
+      return;
+    }
+    if (account === null || salt.data === undefined) {
+      setRevealFailure("the owner salt is not available yet");
+      return;
+    }
+    try {
+      const opened = decryptVaultItem(item, account, secret, salt.data.owner_salt_b64);
+      setRevealed((current) => ({ ...current, [item.id]: opened.text }));
+      setRevealFailure(null);
+    } catch (error) {
+      setRevealFailure(describeError(error));
+    }
+  };
 
   const addItem = useMutation({
     mutationFn: async () => {
@@ -218,6 +251,11 @@ export default function VaultPage(): React.ReactNode {
               {failure}
             </Notice>
           )}
+          {revealFailure === null ? null : (
+            <Notice tone="error" title="The note could not be opened">
+              {revealFailure}
+            </Notice>
+          )}
         </section>
 
         <section aria-labelledby="notes" className="card min-w-0 px-5 py-5">
@@ -275,18 +313,57 @@ export default function VaultPage(): React.ReactNode {
                     ),
                   },
                 ]}
+                expanded={(item) =>
+                  revealed[item.id] === undefined ? null : (
+                    <div className="rounded-2xl bg-surface px-4 py-3">
+                      <p className="field-label">Note</p>
+                      <p className="mt-1 whitespace-pre-wrap text-body text-ink">
+                        {revealed[item.id]}
+                      </p>
+                    </div>
+                  )
+                }
                 actions={{
                   header: "Actions",
                   render: (item) => (
-                    <button
-                      type="button"
-                      className="field-label min-h-9 rounded-full border border-rule px-3 py-1.5 text-destructive transition-colors hover:border-destructive"
-                      onClick={() => {
-                        removeItem.mutate(item.id);
-                      }}
-                    >
-                      Delete
-                    </button>
+                    <span className="flex flex-wrap items-center justify-end gap-2">
+                      {revealed[item.id] === undefined ? (
+                        <button
+                          type="button"
+                          className="field-label min-h-9 rounded-full border border-rule px-3 py-1.5 transition-colors hover:border-ink"
+                          onClick={() => {
+                            reveal(item);
+                          }}
+                        >
+                          Read
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="field-label min-h-9 rounded-full border border-rule px-3 py-1.5 transition-colors hover:border-ink"
+                          onClick={() => {
+                            setRevealed((current) => {
+                              const next = { ...current };
+                              const remaining = Object.entries(next).filter(
+                                ([id]) => id !== item.id,
+                              );
+                              return Object.fromEntries(remaining);
+                            });
+                          }}
+                        >
+                          Hide
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="field-label min-h-9 rounded-full border border-rule px-3 py-1.5 text-destructive transition-colors hover:border-destructive"
+                        onClick={() => {
+                          removeItem.mutate(item.id);
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </span>
                   ),
                 }}
               />

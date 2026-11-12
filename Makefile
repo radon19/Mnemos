@@ -41,6 +41,7 @@ test-e2e:
 demo:
 	pnpm --filter @mnemos/crypto build
 	pnpm --filter @mnemos/mcp build
+	docker compose up -d postgres broker
 	cd apps/broker && uv run python ../../scripts/demo.py
 
 deploy:

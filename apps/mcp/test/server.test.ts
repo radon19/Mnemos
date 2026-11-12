@@ -33,7 +33,7 @@ class StubChain implements ChainClient {
       price: "1",
       q_hash: "a".repeat(64),
       status: "Approved",
-      created_ns: "1",
+      created_ns: String(BigInt(Date.now()) * 1_000_000n),
       receipt_hash: null,
     };
   }
@@ -62,6 +62,14 @@ class StubChain implements ChainClient {
       request_ttl_ns: "600000000000",
       day_ns: "86400000000000",
     };
+  }
+
+  async getRequestTtlNs(): Promise<bigint> {
+    return 600_000_000_000n;
+  }
+
+  async expireRequest(reqId: number): Promise<string> {
+    return `expired request ${reqId}`;
   }
 
   async creditOf(): Promise<string> {

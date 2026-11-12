@@ -37,6 +37,7 @@ from .logging import configure_logging
 from .pipeline import AskPipeline
 from .ratelimit import RateLimiter
 from .redteam import RedteamRunner
+from .retention import Retention
 from .services import Services
 from .sweeper import Sweeper
 
@@ -164,6 +165,14 @@ def create_app(
         publisher=publisher,
         now=now,
     )
+    retention = (
+        Retention(
+            session_factory=session_factory,
+            interval_seconds=configured.retention_interval_seconds,
+        )
+        if start_background and configured.retention_enabled
+        else None
+    )
     sweeper = (
         Sweeper(
             session_factory=session_factory,
@@ -196,15 +205,19 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        task: asyncio.Task[None] | None = None
+        tasks: list[asyncio.Task[None]] = []
         if services.sweeper is not None:
-            task = asyncio.create_task(services.sweeper.run_forever(), name="mnemos-sweeper")
+            tasks.append(asyncio.create_task(services.sweeper.run_forever(), name="mnemos-sweeper"))
+        if retention is not None:
+            tasks.append(asyncio.create_task(retention.run_forever(), name="mnemos-retention"))
         try:
             yield
         finally:
             if services.sweeper is not None:
                 services.sweeper.stop()
-            if task is not None:
+            if retention is not None:
+                retention.stop()
+            for task in tasks:
                 with contextlib.suppress(asyncio.TimeoutError, asyncio.CancelledError):
                     await asyncio.wait_for(task, timeout=5.0)
                 if not task.done():
