@@ -202,7 +202,7 @@ export default function EarningsPage(): React.ReactNode {
                     key: "hash",
                     header: "Receipt hash",
                     render: (receipt) => (
-                      <Hash value={receipt.receipt_hash} label="Receipt hash" />
+                      <Hash value={receipt.receipt_hash} label="Receipt hash" copyable />
                     ),
                   },
                 ]}

@@ -9,6 +9,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY --from=ghcr.io/astral-sh/uv:0.13.7 /uv /usr/local/bin/uv
 
+# The service never needs to write to the image.
+RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin broker
+
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
@@ -18,6 +21,8 @@ COPY src ./src
 COPY migrations ./migrations
 COPY alembic.ini ./
 RUN uv sync --frozen --no-dev
+
+USER broker
 
 EXPOSE 8000
 

@@ -13,28 +13,7 @@ import { formatNear, formatTimestamp, truncateAccount } from "@/lib/format";
 import { callView, connectWallet, sendContractCall, walletAccounts, type GrantView } from "@/lib/near";
 import { describeError, useSession } from "@/lib/session";
 
-const STORAGE_KEY = "mnemos.grants";
 const SCOPES = ["travel", "health", "work", "preferences"];
-
-function readLocalGrants(): string[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (raw === null) {
-    return [];
-  }
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLocalGrants(agents: string[]): void {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(agents));
-}
 
 
 export default function GrantsPage(): React.ReactNode {
@@ -46,26 +25,18 @@ export default function GrantsPage(): React.ReactNode {
   const [days, setDays] = useState("1");
   const [tokens, setTokens] = useState("256");
   const [lookup, setLookup] = useState("");
+  const [editing, setEditing] = useState<GrantView | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
   const [revokeText, setRevokeText] = useState("");
   const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
 
-  const localGrants = readLocalGrants();
-
+  // The contract lists every grant the owner gave, so the screen does not
+  // depend on which browser created them.
   const grants = useQuery({
-    queryKey: ["grants", account, localGrants.join(",")],
+    queryKey: ["grants", account],
     enabled: status === "signed-in" && account !== null,
-    queryFn: async () => {
-      const results: { agent: string; grant: GrantView | null }[] = [];
-      for (const target of localGrants) {
-        const grant = await callView<GrantView>("get_grant", {
-          owner: account ?? "",
-          agent: target,
-        });
-        results.push({ agent: target, grant });
-      }
-      return results;
-    },
+    queryFn: async () =>
+      (await callView<GrantView[]>("grants_by_owner", { owner: account ?? "" })) ?? [],
     retry: false,
   });
 
@@ -79,6 +50,23 @@ export default function GrantsPage(): React.ReactNode {
       }),
     retry: false,
   });
+
+  /**
+   * Load an existing grant into the form. The contract upserts on
+   * `create_grant`, so submitting the form again is the edit.
+   */
+  const edit = (grant: GrantView): void => {
+    setEditing(grant);
+    setAgent(grant.agent);
+    setScopes(grant.scopes);
+    setPrice(formatNear(grant.price, 6));
+    setDailyCap(String(grant.daily_cap));
+    const remainingNs = BigInt(grant.expires_ns) - BigInt(Math.round(Date.now() / 1000)) * 1_000_000_000n;
+    const remainingDays = Math.max(1, Math.ceil(Number(remainingNs) / 86_400_000_000_000));
+    setDays(String(remainingDays));
+    setTokens(String(grant.max_answer_tokens));
+    setNotice(null);
+  };
 
   const create = useMutation({
     mutationFn: async () => {
@@ -111,8 +99,6 @@ export default function GrantsPage(): React.ReactNode {
       return result;
     },
     onSuccess: async () => {
-      const agents = Array.from(new Set([...readLocalGrants(), agent.trim()]));
-      writeLocalGrants(agents);
       setNotice({
         tone: "success",
         text: `Grant created for ${agent.trim()}. It is revocable from this page at any time.`,
@@ -187,11 +173,12 @@ export default function GrantsPage(): React.ReactNode {
               <span className="field-label">Agent account</span>
               <input
                 value={agent}
+                readOnly={editing !== null}
                 onChange={(event) => {
                   setAgent(event.target.value);
                 }}
                 placeholder="mnemos-agent-xxxxxxxx.testnet"
-                className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent"
+                className="min-h-11 rounded-xl border border-rule bg-sunken px-3.5 text-body outline-none focus:border-accent read-only:opacity-70"
               />
             </label>
 
@@ -280,12 +267,37 @@ export default function GrantsPage(): React.ReactNode {
                 : `charged per read: ${formatNear(nearToYocto(price) ?? "0")} NEAR · at most ${dailyCap} reads a day`}
             </p>
 
-            <Button
-              type="submit"
-              disabled={signedOut || create.isPending || agent.trim().length < 3 || scopes.length === 0}
-            >
-              {create.isPending ? "Waiting for the wallet…" : "Create grant"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="submit"
+                disabled={
+                  signedOut || create.isPending || agent.trim().length < 3 || scopes.length === 0
+                }
+              >
+                {create.isPending
+                  ? "Waiting for the wallet…"
+                  : editing === null
+                    ? "Create grant"
+                    : "Update the grant"}
+              </Button>
+              {editing === null ? null : (
+                <button
+                  type="button"
+                  className="field-label min-h-11 rounded-full border border-rule px-4 transition-colors hover:border-ink"
+                  onClick={() => {
+                    setEditing(null);
+                    setAgent("");
+                    setScopes(["travel"]);
+                    setPrice("0.01");
+                    setDailyCap("10");
+                    setDays("1");
+                    setTokens("256");
+                  }}
+                >
+                  Cancel the edit
+                </button>
+              )}
+            </div>
           </form>
         </section>
 
@@ -296,19 +308,22 @@ export default function GrantsPage(): React.ReactNode {
 
           {grants.data?.length === 0 ? (
             <EmptyState
-              title="No grants from this browser"
-              body="Create one on the left, or look up a grant another browser created."
+              title="No grants yet"
+              body="Create one on the left. The contract keeps the list, so it is the same in every browser."
             />
           ) : null}
 
-          {grants.data?.map((entry) => (
+          {grants.data?.map((grant) => (
             <GrantRow
-              key={entry.agent}
-              agent={entry.agent}
-              grant={entry.grant}
+              key={grant.agent}
+              agent={grant.agent}
+              grant={grant}
               onRevoke={(target) => {
                 setRevokeTarget(target);
                 setRevokeText("");
+              }}
+              onEdit={(grant) => {
+                edit(grant);
               }}
             />
           ))}
@@ -338,6 +353,9 @@ export default function GrantsPage(): React.ReactNode {
                   onRevoke={(target) => {
                     setRevokeTarget(target);
                     setRevokeText("");
+                  }}
+                  onEdit={(grant) => {
+                    edit(grant);
                   }}
                 />
               </div>
@@ -404,10 +422,12 @@ function GrantRow({
   agent,
   grant,
   onRevoke,
+  onEdit,
 }: {
   agent: string;
   grant: GrantView | null;
   onRevoke: (agent: string) => void;
+  onEdit: (grant: GrantView) => void;
 }): React.ReactNode {
   if (grant === null) {
     return (
@@ -450,17 +470,28 @@ function GrantRow({
           <dd className="numeric text-caption">{formatTimestamp(Number(BigInt(grant.expires_ns) / 1_000_000n))}</dd>
         </div>
       </dl>
-      {state === "active" ? (
+      <div className="mt-3 flex flex-wrap items-center gap-4">
         <button
           type="button"
-          className="field-label mt-3 text-destructive underline decoration-rule underline-offset-4 hover:text-destructive"
+          className="field-label inline-flex min-h-11 items-center underline decoration-rule underline-offset-4 hover:text-ink"
           onClick={() => {
-            onRevoke(grant.agent);
+            onEdit(grant);
           }}
         >
-          Revoke
+          Edit
         </button>
-      ) : null}
+        {state === "active" ? (
+          <button
+            type="button"
+            className="field-label inline-flex min-h-11 items-center text-destructive underline decoration-rule underline-offset-4 hover:text-destructive"
+            onClick={() => {
+              onRevoke(grant.agent);
+            }}
+          >
+            Revoke
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

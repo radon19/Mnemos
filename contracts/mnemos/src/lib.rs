@@ -686,6 +686,30 @@ impl Contract {
         })
     }
 
+    /// Every grant an owner has given, newest first.
+    ///
+    /// The list is bounded by `MAX_GRANTS_PER_OWNER`, so the view cannot grow
+    /// without limit and the owner can see their whole access surface.
+    pub fn grants_by_owner(&self, owner: AccountId) -> Vec<GrantView> {
+        let now = env::block_timestamp();
+        let agents: Vec<AccountId> = match self.grants_by_owner.get(&owner) {
+            Some(list) => list.to_vec(),
+            None => Vec::new(),
+        };
+        let mut views: Vec<GrantView> = agents
+            .iter()
+            .filter_map(|agent| {
+                let key = GrantKey {
+                    owner: owner.clone(),
+                    agent: agent.clone(),
+                };
+                self.grants.get(&key).map(|grant| grant_view(grant, now))
+            })
+            .collect();
+        views.sort_by_key(|view| std::cmp::Reverse(view.expires_ns));
+        views
+    }
+
     pub fn get_request(&self, req_id: u64) -> Option<ReadReqView> {
         self.requests.get(&req_id).map(read_req_view)
     }

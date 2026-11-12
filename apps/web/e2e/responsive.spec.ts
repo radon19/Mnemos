@@ -13,13 +13,44 @@ const WIDTHS = [320, 360, 390, 414, 480, 540, 640, 768, 834, 1024, 1280, 1440, 1
 
 const PATHS = ["/", "/setup", "/vault", "/grants", "/activity", "/earnings", "/redteam"];
 
+/**
+ * Sign in once and reuse the session.
+ *
+ * The suite walks thirteen widths, and a sign-in per width would spend the
+ * broker's authentication rate limit on the test run rather than on an
+ * attack. The session cookie is copied into every context instead.
+ */
+let sessionCookie: string | null = null;
+
 async function signIn(page: import("@playwright/test").Page): Promise<void> {
+  if (sessionCookie !== null) {
+    const context = page.context();
+    const [cookie] = sessionCookie.split("; ");
+    const [name, ...rest] = (cookie ?? "").split("=");
+    if (name !== undefined && name !== "" && rest.length > 0) {
+      await context.addCookies([
+        {
+          name,
+          value: rest.join("="),
+          domain: "localhost",
+          path: "/",
+          httpOnly: true,
+          sameSite: "Strict",
+        },
+      ]);
+    }
+  }
   await page.goto("/setup");
   await page.waitForSelector("body[data-hydrated='true']", { timeout: 20_000 });
   const demo = page.getByRole("button", { name: "Use local demo signer" });
   if ((await demo.count()) > 0) {
     await demo.click();
     await page.waitForTimeout(1_200);
+    const cookies = await page.context().cookies();
+    const session = cookies.find((cookie) => cookie.name === "mnemos_session");
+    if (session !== undefined) {
+      sessionCookie = `${session.name}=${session.value}`;
+    }
   }
 }
 

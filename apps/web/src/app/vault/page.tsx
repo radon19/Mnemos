@@ -12,6 +12,7 @@ import { Notice } from "@/components/Notice";
 import { PageHeader } from "@/components/PageHeader";
 import { BrokerError, brokerApi, type VaultItem } from "@/lib/broker";
 import { decryptVaultItem } from "@/lib/decrypt";
+import { useBrokerTrust } from "@/lib/trust";
 import { formatTimestamp } from "@/lib/format";
 import { describeError, useSession } from "@/lib/session";
 import {
@@ -49,6 +50,10 @@ export default function VaultPage(): React.ReactNode {
     retry: false,
     enabled: status === "signed-in",
   });
+
+  // The browser refuses to encrypt for a broker whose key is not the one
+  // registered on chain.
+  const trust = useBrokerTrust(status === "signed-in");
 
   const salt = useQuery({
     queryKey: ["vault-salt"],
@@ -233,12 +238,20 @@ export default function VaultPage(): React.ReactNode {
               {tooLong ? " — over the limit" : ""}
             </p>
 
-            <Button type="submit" disabled={!canAdd || addItem.isPending}>
+            <Button
+              type="submit"
+              disabled={!canAdd || addItem.isPending || trust.state !== "trusted"}
+            >
               {addItem.isPending ? "Encrypting…" : "Encrypt and store"}
             </Button>
             {signedOut ? (
               <p className="text-caption text-muted">Sign in to store a note.</p>
             ) : null}
+            {signedOut || trust.reason === null ? null : (
+              <Notice tone="error" title="This note will not be encrypted">
+                {trust.reason}
+              </Notice>
+            )}
           </form>
 
           {message === null ? null : (
@@ -301,7 +314,9 @@ export default function VaultPage(): React.ReactNode {
                   {
                     key: "hash",
                     header: "Content hash",
-                    render: (item) => <Hash value={item.content_hash} label="Content hash" />,
+                    render: (item) => (
+                      <Hash value={item.content_hash} label="Content hash" copyable />
+                    ),
                   },
                   {
                     key: "stored",
@@ -330,7 +345,7 @@ export default function VaultPage(): React.ReactNode {
                       {revealed[item.id] === undefined ? (
                         <button
                           type="button"
-                          className="field-label min-h-9 rounded-full border border-rule px-3 py-1.5 transition-colors hover:border-ink"
+                          className="field-label inline-flex min-h-11 items-center rounded-full border border-rule px-3 py-1.5 transition-colors hover:border-ink"
                           onClick={() => {
                             reveal(item);
                           }}
@@ -340,7 +355,7 @@ export default function VaultPage(): React.ReactNode {
                       ) : (
                         <button
                           type="button"
-                          className="field-label min-h-9 rounded-full border border-rule px-3 py-1.5 transition-colors hover:border-ink"
+                          className="field-label inline-flex min-h-11 items-center rounded-full border border-rule px-3 py-1.5 transition-colors hover:border-ink"
                           onClick={() => {
                             setRevealed((current) => {
                               const next = { ...current };
@@ -356,7 +371,7 @@ export default function VaultPage(): React.ReactNode {
                       )}
                       <button
                         type="button"
-                        className="field-label min-h-9 rounded-full border border-rule px-3 py-1.5 text-destructive transition-colors hover:border-destructive"
+                        className="field-label inline-flex min-h-11 items-center rounded-full border border-rule px-3 py-1.5 text-destructive transition-colors hover:border-destructive"
                         onClick={() => {
                           removeItem.mutate(item.id);
                         }}

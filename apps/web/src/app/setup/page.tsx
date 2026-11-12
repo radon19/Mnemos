@@ -10,7 +10,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusMark } from "@/components/StatusMark";
 import { brokerApi } from "@/lib/broker";
 import { contractId, demoMode, explorerBase, nearNetwork } from "@/lib/config";
-import { callView, type BrokerInfo, type ContractConfig } from "@/lib/near";
+import {
+  callView,
+  connectWallet,
+  sendContractCall,
+  walletAccounts,
+  type BrokerInfo,
+  type ContractConfig,
+} from "@/lib/near";
 import { describeError, useSession } from "@/lib/session";
 interface StepProps {
   index: string;
@@ -41,6 +48,7 @@ export default function SetupPage(): React.ReactNode {
   const { status, account, demo, signIn, signInDemo, unlocked, unlock, lock, error, clearError } =
     useSession();
   const [passphrase, setPassphrase] = useState("");
+  const [pauseTarget, setPauseTarget] = useState<"pause" | "unpause" | null>(null);
 
   const identity = useQuery({
     queryKey: ["broker-identity"],
@@ -60,6 +68,26 @@ export default function SetupPage(): React.ReactNode {
     queryFn: async () =>
       await callView<BrokerInfo>("get_broker", { owner: config.data?.owner ?? "" }),
     retry: false,
+  });
+
+  /**
+   * The pause switch is the incident control: while the contract is paused no
+   * grant can be created and no read can be requested.
+   */
+  const pause = useMutation({
+    mutationFn: async (action: "pause" | "unpause") => {
+      const wallet = await connectWallet();
+      const accounts = await walletAccounts(wallet);
+      const signer = accounts[0];
+      if (signer === undefined) {
+        throw new Error("connect the owner wallet first");
+      }
+      await sendContractCall(wallet, { method: action, args: {}, signerId: signer });
+    },
+    onSuccess: async () => {
+      setPauseTarget(null);
+      await config.refetch();
+    },
   });
 
   const demoSignIn = useMutation({
@@ -240,6 +268,23 @@ export default function SetupPage(): React.ReactNode {
                 )}
               </dd>
             </dl>
+            <div className="mt-4">
+              {config.data === undefined || config.data === null ? null : (
+                <Button
+                  tone={config.data.paused ? "primary" : "destructive"}
+                  disabled={pause.isPending}
+                  onClick={() => {
+                    setPauseTarget(config.data?.paused === true ? "unpause" : "pause");
+                  }}
+                >
+                  {config.data.paused ? "Resume the contract" : "Pause the contract"}
+                </Button>
+              )}
+              <p className="mt-2 max-w-[54ch] text-caption text-muted">
+                Pausing blocks new grants and new reads. Requests that were already paid
+                for are refunded, and the contract can be resumed at any time.
+              </p>
+            </div>
           </div>
         </Step>
 
@@ -288,6 +333,48 @@ export default function SetupPage(): React.ReactNode {
         </Step>
       </div>
 
+      {pauseTarget === null ? null : (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/85 p-4 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pause-title"
+            className="card max-h-[88dvh] w-full max-w-[32rem] overflow-y-auto px-6 py-6"
+          >
+            <h2 id="pause-title" className="text-title">
+              {pauseTarget === "pause" ? "Pause the contract" : "Resume the contract"}
+            </h2>
+            <p className="mt-2 text-body text-muted">
+              {pauseTarget === "pause"
+                ? "No grant can be created and no read can be requested while the contract is paused. Requests that were paid for are refunded."
+                : "The contract accepts grants and reads again as soon as this transaction is confirmed."}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Button
+                tone={pauseTarget === "pause" ? "destructive" : "primary"}
+                disabled={pause.isPending}
+                onClick={() => {
+                  pause.mutate(pauseTarget);
+                }}
+              >
+                {pause.isPending
+                  ? "Waiting for the wallet…"
+                  : pauseTarget === "pause"
+                    ? "Pause it"
+                    : "Resume it"}
+              </Button>
+              <Button
+                tone="quiet"
+                onClick={() => {
+                  setPauseTarget(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,25 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  contract:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: contracts/mnemos
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: contracts/mnemos
-      - run: cargo fmt --check
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo test --lib
-
-  broker:
+  check:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -41,39 +23,44 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U mnemos -d mnemos_test"
           --health-interval 3s --health-timeout 3s --health-retries 30
-    defaults:
-      run:
-        working-directory: apps/broker
-    env:
-      DATABASE_URL: postgresql+asyncpg://mnemos:mnemos@localhost:5432/mnemos_test
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with:
-          version: "0.13.7"
-      - run: uv sync --frozen
-      - run: uv run ruff check src tests
-      - run: uv run ruff format --check src tests
-      - run: uv run mypy --strict src
-      - run: uv run pytest -q
-      - name: integration tests against Postgres
-        run: |
-          uv run alembic upgrade head
-          uv run pytest -q -m integration
 
-  node:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts/mnemos
+
       - uses: pnpm/action-setup@v4
         with:
           version: 12.15.0
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22.22.2
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm test
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.7"
+
+      - name: Install dependencies
+        run: make install
+
+      # The same command a reviewer runs locally: static checks and unit tests
+      # for the contract, the crypto packages, the broker, the MCP server and
+      # the web app.
+      - name: make check
+        run: ./scripts/check.sh
+
+      - name: Broker integration tests
+        working-directory: apps/broker
+        env:
+          DATABASE_URL: postgresql+asyncpg://mnemos:mnemos@localhost:5432/mnemos_test
+        run: |
+          uv run alembic upgrade head
+          uv run pytest -q -m integration

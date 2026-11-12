@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     nearai_model: str = "deepseek-ai/DeepSeek-V4.1-Flash-1017"
     nearai_base_url: str = "https://cloud-api.near.ai/v1"
 
-    auth_rate_limit_per_minute: int = Field(default=20, ge=1, le=600)
+    auth_rate_limit_per_minute: int = Field(default=60, ge=1, le=600)
     ask_rate_limit_per_minute: int = Field(default=10, ge=1, le=600)
     max_request_bytes: int = Field(default=32768, ge=1024, le=1_048_576)
     max_question_chars: int = Field(default=2000, ge=1, le=8000)

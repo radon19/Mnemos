@@ -156,6 +156,17 @@ async fn full_lifecycle_and_negative_paths() -> anyhow::Result<()> {
     assert_eq!(grant["remaining_today"], 5);
     assert_eq!(grant["revoked"], false);
 
+    // The owner can list every grant they gave.
+    let owned: Value = env
+        .contract
+        .view("grants_by_owner")
+        .args_json(json!({"owner": env.owner.id()}))
+        .await?
+        .json()?;
+    let owned_list = owned.as_array().expect("grants");
+    assert_eq!(owned_list.len(), 1);
+    assert_eq!(owned_list[0]["agent"], env.agent.id().as_str());
+
     // Scope isolation: a travel grant must not expose work.
     expect_error(
         &env,

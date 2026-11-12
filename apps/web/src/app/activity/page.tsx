@@ -188,7 +188,13 @@ export default function ActivityPage(): React.ReactNode {
                   {
                     key: "receipt",
                     header: "Receipt",
-                    render: (item) => <Hash value={item.receipt_hash ?? ""} label="Receipt hash" />,
+                    render: (item) => (
+                      <Hash
+                        value={item.receipt_hash ?? ""}
+                        label="Receipt hash"
+                        copyable
+                      />
+                    ),
                   },
                 ]}
               />

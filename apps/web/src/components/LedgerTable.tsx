@@ -104,7 +104,7 @@ export function LedgerTable<T>({
                     </td>
                   )}
                 </tr>
-                {expanded === undefined ? null : (
+                {expanded === undefined ? null : expanded(row) === null ? null : (
                   <tr>
                     <td
                       colSpan={columns.length + (actions === undefined ? 0 : 1)}

@@ -105,6 +105,32 @@ fn broker_and_grant_are_registered_and_viewed() {
 }
 
 #[test]
+fn grants_by_owner_lists_every_grant_the_owner_gave() {
+    let mut contract = new_contract();
+    create_grant(&mut contract, PRICE, 3, START + DAY_NS);
+    with_context(OWNER, 0, START);
+    contract
+        .create_grant(
+            acct("second-agent.testnet"),
+            vec!["work".to_string()],
+            U128(PRICE),
+            1,
+            U128((START + 2 * DAY_NS).into()),
+            128,
+        )
+        .expect("second grant");
+
+    let grants = contract.grants_by_owner(acct(OWNER));
+    assert_eq!(grants.len(), 2);
+    assert_eq!(grants[0].agent, acct("second-agent.testnet"));
+    assert_eq!(grants[1].agent, acct(AGENT));
+    assert_eq!(grants[1].scopes, vec!["travel", "preferences"]);
+
+    // Another owner sees nothing.
+    assert!(contract.grants_by_owner(acct("other.testnet")).is_empty());
+}
+
+#[test]
 fn invalid_inputs_are_rejected() {
     let mut contract = new_contract();
     with_context(OWNER, 0, START);
