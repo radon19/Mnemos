@@ -94,8 +94,12 @@ than blank — and it never carries meaning.
   sentence of orientation, then cards that hold forms, tables and evidence.
 - Prose is measured: 54–76 characters per line, never the full width.
 - Tables sit inside cards with hairline rows. No zebra striping.
-- On mobile the grids collapse to one column and the tables become labelled
-  rows. Nothing scrolls sideways at 390px.
+- On mobile the grids collapse to one column and the ledger tables become a
+  stack of records: one card per read, each field labelled the way a receipt
+  is labelled. Nothing scrolls sideways at any width, and no text is cut off.
+- The layouts are checked at 320, 360, 390, 414, 480, 540, 640, 768, 834, 1024,
+  1280, 1440 and 1920 pixels. Every interactive control is at least 44 pixels
+  tall on a phone.
 
 ## Components
 
@@ -145,4 +149,6 @@ shadows, sparkle icons, centred marketing copy without a real number.
 Semantic landmarks, visible focus, full keyboard operation, labelled
 controls, `aria-live` for the activity stream, colour-independent status, 4.5:1
 text contrast. Verified at 390, 768 and 1440 pixels with axe-core and
-Playwright: 36 tests, no violations.
+Playwright: 36 tests, no violations. A separate responsive suite walks every
+screen at thirteen widths from 320 to 1920 pixels and fails on sideways
+scrolling, clipped text or a touch target under 30 pixels.

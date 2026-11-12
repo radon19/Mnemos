@@ -54,6 +54,38 @@ screens, the same tables, the same evidence.
 | the mobile menu ran off the screen | mobile | The six section links were one row. They wrap. |
 | a token rename left dead classes | grants | The redesign renamed the paper token, and `text-paper` silently became no class, so an active scope chip rendered as ink-on-ink. A script now compares every colour utility used in the app against the theme and fails on an unknown one. |
 
+## Responsive work
+
+The ledger tables were the one thing the redesign broke on a phone: six
+columns at 390 pixels is 411 pixels of table, and the card clipped the rest, so
+the receipt hash and the delete control were simply unreachable. The tables are
+now one component: a real table from `md` up, and below that a stack of
+records, one per read, each field labelled the way a receipt is labelled.
+Nothing scrolls sideways and nothing is cut off.
+
+Also fixed while making it work on a phone:
+
+- The navigation bar overflowed at 768 pixels, because the owner block and the
+  primary action were still in the bar at that width. Both moved to the large
+  breakpoint, and the menu links wrap.
+- The grant form squeezed four fields into two columns; it is one column below
+  `sm`.
+- The revoke dialog could run past the bottom of a short screen; it scrolls.
+- The touch targets: buttons, nav links, the theme toggle, the menu button and
+  the evidence link are all at least 44 pixels tall on a phone.
+- The owner account in the bar was truncated with `text-overflow`, so a screen
+  reader read the truncated string. The full account id is now announced and
+  the short one is marked decorative.
+
+A responsive suite now walks every screen at thirteen widths from 320 to 1920
+pixels, signs in so the screens carry their real content, and fails on
+sideways scrolling, clipped text or a touch target under 30 pixels.
+
+```text
+$ cd apps/web && pnpm exec playwright test
+  81 passed (8.0m)
+```
+
 ## Deliberate choices
 
 **The violet ambient light.** The detector calls a purple gradient background

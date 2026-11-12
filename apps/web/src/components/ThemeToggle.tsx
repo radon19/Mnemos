@@ -32,7 +32,7 @@ export function ThemeToggle(): React.ReactNode {
   return (
     <button
       type="button"
-      className="inline-flex min-h-9 items-center gap-2 rounded-full border border-rule px-3 py-1.5 text-caption text-muted transition-colors hover:text-ink"
+      className="inline-flex min-h-11 items-center gap-2 rounded-full border border-rule px-3 py-1.5 text-caption text-muted transition-colors hover:text-ink md:min-h-9"
       onClick={() => {
         setTheme(theme === "dark" ? "light" : "dark");
       }}

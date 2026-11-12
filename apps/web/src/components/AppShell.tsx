@@ -29,7 +29,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }): React.ReactNode 
               href={item.href}
               {...(onNavigate === undefined ? {} : { onClick: onNavigate })}
               aria-current={active ? "page" : undefined}
-              className={`inline-flex min-h-9 items-center rounded-full px-3.5 py-1.5 text-caption transition-colors ${
+              className={`inline-flex min-h-11 items-center rounded-full px-3.5 py-1.5 text-caption transition-colors md:min-h-9 ${
                 active
                   ? "bg-sunken text-ink"
                   : "text-muted hover:bg-sunken hover:text-ink"
@@ -49,11 +49,11 @@ function OwnerBlock(): React.ReactNode {
   if (status === "signed-in" && account !== null) {
     return (
       <div className="flex items-center gap-3">
-        <span
-          className="hash hidden max-w-[10rem] truncate text-caption text-muted sm:inline"
-          title={account}
-        >
-          {truncateAccount(account, 8, 5)}
+        <span className="hidden max-w-[10rem] items-center sm:flex">
+          <span className="sr-only">{account}</span>
+          <span aria-hidden="true" className="hash truncate text-caption text-muted">
+            {truncateAccount(account, 8, 5)}
+          </span>
         </span>
         {demo ? (
           <span className="hidden rounded-full bg-accent-soft px-2.5 py-1 text-micro text-accent-ink md:inline">
@@ -75,7 +75,7 @@ function OwnerBlock(): React.ReactNode {
   return (
     <button
       type="button"
-      className="rounded-full border border-rule px-4 py-2 text-caption text-ink transition-colors hover:border-ink"
+      className="min-h-11 rounded-full border border-rule px-4 py-2 text-caption text-ink transition-colors hover:border-ink"
       onClick={() => {
         void signIn();
       }}
@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
 
       <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5 sm:pt-4">
         <div className="mx-auto flex max-w-[1180px] items-center gap-3 rounded-full border border-rule bg-surface px-3 py-2 shadow-[var(--shadow-card)] sm:px-4">
-          <Link href="/" className="flex items-center gap-2.5 pr-1">
+          <Link href="/" className="flex min-h-11 items-center gap-2.5 pr-1">
             <span className="mark" aria-hidden="true" />
             <span className="font-display text-[1.0625rem] font-semibold tracking-tight">
               Mnemos
@@ -117,7 +117,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
             <ThemeToggle />
             <Link
               href="/setup"
-              className="hidden rounded-full bg-ink px-4 py-2 text-caption text-canvas transition-opacity hover:opacity-90 lg:inline-flex"
+              className="hidden min-h-11 rounded-full bg-ink px-4 py-2 text-caption text-canvas transition-opacity hover:opacity-90 lg:inline-flex"
             >
               Open the ledger
             </Link>
@@ -125,7 +125,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
               type="button"
               aria-expanded={menuOpen}
               aria-controls="mobile-nav"
-              className="rounded-full border border-rule px-3 py-1.5 text-caption text-ink lg:hidden"
+              className="min-h-11 rounded-full border border-rule px-3 py-1.5 text-caption text-ink lg:hidden"
               onClick={() => {
                 setMenuOpen(!menuOpen);
               }}

@@ -187,6 +187,29 @@ yet, and the error carries the stable code and the next action.
 - The live red-team run against the real model: six attacks, no answer carried
   twelve consecutive words of the memory.
 
+## Phase 9 — responsive
+
+The ledger tables were the one thing the redesign broke on a phone: six columns
+at 390 pixels is 411 pixels of table, and the card clipped the rest, so the
+receipt hash and the delete control were unreachable. The tables are now one
+component — a real table from `md` up, and below that a stack of records, one
+per read, each field labelled the way a receipt is labelled.
+
+Also fixed: the navigation bar overflowed at 768 pixels, the grant form
+squeezed four fields into two columns on a phone, the revoke dialog could run
+past the bottom of a short screen, several touch targets were under 44
+pixels, and the owner account in the bar was truncated in a way that made a
+screen reader read the truncated string.
+
+A responsive suite now walks every screen at thirteen widths from 320 to 1920
+pixels, signs in so the screens carry their real content, and fails on
+sideways scrolling, clipped text or a touch target under 30 pixels.
+
+```text
+$ cd apps/web && pnpm exec playwright test
+  81 passed (8.0m)
+```
+
 ## Decisions so far
 - NEAR AI model: `deepseek-ai/DeepSeek-V4.1-Flash-1017` (attestation/TEE-capable
   per models endpoint; $0.30/$1.20 per million tokens). E2EE and provider TEE

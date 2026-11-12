@@ -148,7 +148,7 @@ export default function SetupPage(): React.ReactNode {
               <dt className="field-label border-b border-rule py-3 first:border-t">Contract</dt>
               <dd className="border-b border-rule py-3">
                 <a
-                  className="hash break-all underline decoration-rule underline-offset-4 hover:text-ink"
+                  className="hash inline-flex min-h-11 items-center break-all underline decoration-rule underline-offset-4 hover:text-ink"
                   href={`${explorerBase}/address/${contractId}`}
                   target="_blank"
                   rel="noreferrer"

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { Hash } from "@/components/Hash";
+import { LedgerTable } from "@/components/LedgerTable";
 import { Notice } from "@/components/Notice";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusMark } from "@/components/StatusMark";
@@ -156,61 +157,60 @@ export default function EarningsPage(): React.ReactNode {
             />
           ) : null}
           {receipts.data !== undefined && receipts.data !== null && receipts.data.length > 0 ? (
-            <div className="mt-2 overflow-hidden">
-              <table className="w-full text-left">
-                <caption className="sr-only">Recent receipts on chain</caption>
-                <thead>
-                  <tr>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Read
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Agent
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Scope
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Paid
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Receipt hash
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {receipts.data.map((receipt) => (
-                    <tr key={receipt.req_id} className="align-top">
-                      <td className="border-b border-rule px-4 py-3">
-                        <span className="numeric text-caption">#{receipt.req_id}</span>
-                        <p className="numeric text-caption text-muted">
+            <div className="mt-2">
+              <LedgerTable<ReceiptView>
+                caption="Recent receipts on chain"
+                rows={receipts.data}
+                rowKey={(receipt) => String(receipt.req_id)}
+                columns={[
+                  {
+                    key: "read",
+                    header: "Read",
+                    primary: true,
+                    render: (receipt) => (
+                      <span className="flex flex-col">
+                        <span className="numeric text-body">#{receipt.req_id}</span>
+                        <span className="numeric text-caption text-muted">
                           {formatTimestamp(Number(BigInt(receipt.served_ns) / 1_000_000n))}
-                        </p>
-                      </td>
-                      <td className="border-b border-rule px-4 py-3">
-                        <span className="hash text-caption break-all">
-                          {truncateAccount(receipt.agent, 8, 4)}
                         </span>
-                      </td>
-                      <td className="border-b border-rule px-4 py-3">
-                        <span className="hash text-caption">{receipt.scope}</span>
-                      </td>
-                      <td className="border-b border-rule px-4 py-3">
-                        <span className="numeric text-caption">
-                          {formatNear(receipt.price)} NEAR
-                        </span>
-                      </td>
-                      <td className="border-b border-rule py-3">
-                        <Hash value={receipt.receipt_hash} label="Receipt hash" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "agent",
+                    header: "Agent",
+                    secondary: true,
+                    render: (receipt) => (
+                      <span className="hash text-caption break-all">
+                        {truncateAccount(receipt.agent, 8, 4)}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "scope",
+                    header: "Scope",
+                    render: (receipt) => <span className="hash text-caption">{receipt.scope}</span>,
+                  },
+                  {
+                    key: "paid",
+                    header: "Paid",
+                    render: (receipt) => (
+                      <span className="numeric text-caption">{formatNear(receipt.price)} NEAR</span>
+                    ),
+                  },
+                  {
+                    key: "hash",
+                    header: "Receipt hash",
+                    render: (receipt) => (
+                      <Hash value={receipt.receipt_hash} label="Receipt hash" />
+                    ),
+                  },
+                ]}
+              />
             </div>
           ) : null}
 
-          <div className="mt-8 flex items-center gap-3 border-t border-rule pt-4">
+          <div className="mt-8 flex flex-col items-start gap-2 border-t border-rule pt-4 sm:flex-row sm:items-center sm:gap-3">
             <StatusMark kind="verified" label="Hash only" />
             <p className="max-w-[54ch] text-caption text-muted">
               The chain stores the hash of the request and answer. It cannot reveal the

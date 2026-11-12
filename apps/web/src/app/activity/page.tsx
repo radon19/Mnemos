@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { EvidenceBlock } from "@/components/EvidenceBlock";
+import { LedgerTable } from "@/components/LedgerTable";
 import { Hash } from "@/components/Hash";
 import { Notice } from "@/components/Notice";
 import { PageHeader } from "@/components/PageHeader";
@@ -129,81 +130,68 @@ export default function ActivityPage(): React.ReactNode {
               body="When an agent asks a question inside a granted scope, the receipt appears here within a second."
             />
           ) : (
-            <div className="border-t border-rule">
-              <table className="w-full text-left">
-                <caption className="sr-only">Reads served by the broker</caption>
-                <thead>
-                  <tr>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Time
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Agent
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Scope
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Price
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Receipt
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      State
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => {
-                    const state = stateOf(item);
-                    return (
-                      <tr
-                        key={item.req_id}
-                        className={`align-top hover:bg-surface ${
-                          arriving.has(item.req_id) ? "receipt-arrival" : ""
-                        }`}
-                        onClick={() => {
-                          setSelected(item);
-                        }}
-                      >
-                        <td className="border-b border-rule px-4 py-3">
-                          <button
-                            type="button"
-                            className="numeric text-caption text-muted underline decoration-transparent underline-offset-4 hover:text-ink hover:decoration-rule"
-                            onClick={() => {
-                              setSelected(item);
-                            }}
-                            aria-label={`Open the evidence for read ${item.req_id}`}
-                          >
-                            {formatTimestamp(item.served_at ?? item.created_at)}
-                          </button>
-                        </td>
-                        <td className="border-b border-rule px-4 py-3">
-                          <span className="hash text-caption break-all">
-                            {truncateAccount(item.agent, 8, 4)}
-                          </span>
-                        </td>
-                        <td className="border-b border-rule px-4 py-3">
-                          <span className="hash text-caption">{item.scope}</span>
-                        </td>
-                        <td className="border-b border-rule px-4 py-3">
-                          <span className="numeric text-caption">{formatNear(item.price)} NEAR</span>
-                        </td>
-                        <td className="border-b border-rule px-4 py-3">
-                          <Hash value={item.receipt_hash ?? ""} label="Receipt hash" />
-                        </td>
-                        <td className="border-b border-rule py-3">
+            <div className="mt-3">
+              <LedgerTable<ActivityItem>
+                caption="Reads served by the broker"
+                rows={items}
+                rowKey={(item) => String(item.req_id)}
+                rowClassName={(item) =>
+                  arriving.has(item.req_id) ? "receipt-arrival" : undefined
+                }
+                onRowClick={(item) => {
+                  setSelected(item);
+                }}
+                columns={[
+                  {
+                    key: "scope",
+                    header: "Scope",
+                    primary: true,
+                    render: (item) => {
+                      const state = stateOf(item);
+                      return (
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="hash text-body">{item.scope}</span>
                           <StatusMark kind={state.kind} label={state.label} />
                           {item.error_code === null ? null : (
-                            <p className="field-label mt-1 text-destructive">{item.error_code}</p>
+                            <span className="field-label text-destructive">{item.error_code}</span>
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </span>
+                      );
+                    },
+                  },
+                  {
+                    key: "time",
+                    header: "Time",
+                    render: (item) => (
+                      <span className="numeric text-caption text-muted">
+                        {formatTimestamp(item.served_at ?? item.created_at)}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "agent",
+                    header: "Agent",
+                    secondary: true,
+                    render: (item) => (
+                      <span className="hash text-caption break-all">
+                        {truncateAccount(item.agent, 8, 4)}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "price",
+                    header: "Price",
+                    render: (item) => (
+                      <span className="numeric text-caption">{formatNear(item.price)} NEAR</span>
+                    ),
+                  },
+                  {
+                    key: "receipt",
+                    header: "Receipt",
+                    render: (item) => <Hash value={item.receipt_hash ?? ""} label="Receipt hash" />,
+                  },
+                ]}
+              />
             </div>
           )}
         </section>

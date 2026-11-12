@@ -7,9 +7,10 @@ import { useState } from "react";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { Hash } from "@/components/Hash";
+import { LedgerTable } from "@/components/LedgerTable";
 import { Notice } from "@/components/Notice";
 import { PageHeader } from "@/components/PageHeader";
-import { BrokerError, brokerApi } from "@/lib/broker";
+import { BrokerError, brokerApi, type VaultItem } from "@/lib/broker";
 import { formatTimestamp } from "@/lib/format";
 import { describeError, useSession } from "@/lib/session";
 import {
@@ -245,54 +246,50 @@ export default function VaultPage(): React.ReactNode {
           ) : null}
 
           {items.data !== undefined && items.data.items.length > 0 ? (
-            <div className="mt-2 overflow-hidden">
-              <table className="w-full text-left">
-                <caption className="sr-only">Encrypted notes in the {scope} scope</caption>
-                <thead>
-                  <tr>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Item
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Content hash
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      Stored
-                    </th>
-                    <th scope="col" className="field-label border-b border-rule py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.data.items.map((item) => (
-                    <tr key={item.id} className="align-top">
-                      <td className="border-b border-rule px-4 py-3">
-                        <span className="hash text-caption break-all">{item.id}</span>
-                      </td>
-                      <td className="border-b border-rule px-4 py-3">
-                        <Hash value={item.content_hash} label="Content hash" />
-                      </td>
-                      <td className="border-b border-rule px-4 py-3">
-                        <span className="numeric text-caption text-muted">
-                          {formatTimestamp(item.created_at)}
-                        </span>
-                      </td>
-                      <td className="border-b border-rule py-3 text-right">
-                        <button
-                          type="button"
-                          className="field-label text-destructive underline decoration-rule underline-offset-4 hover:text-destructive"
-                          onClick={() => {
-                            removeItem.mutate(item.id);
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="mt-2">
+              <LedgerTable<VaultItem>
+                caption={`Encrypted notes in the ${scope} scope`}
+                rows={items.data.items}
+                rowKey={(item) => item.id}
+                columns={[
+                  {
+                    key: "id",
+                    header: "Item",
+                    primary: true,
+                    render: (item) => (
+                      <span className="hash text-caption break-all">{item.id}</span>
+                    ),
+                  },
+                  {
+                    key: "hash",
+                    header: "Content hash",
+                    render: (item) => <Hash value={item.content_hash} label="Content hash" />,
+                  },
+                  {
+                    key: "stored",
+                    header: "Stored",
+                    render: (item) => (
+                      <span className="numeric text-caption text-muted">
+                        {formatTimestamp(item.created_at)}
+                      </span>
+                    ),
+                  },
+                ]}
+                actions={{
+                  header: "Actions",
+                  render: (item) => (
+                    <button
+                      type="button"
+                      className="field-label min-h-9 rounded-full border border-rule px-3 py-1.5 text-destructive transition-colors hover:border-destructive"
+                      onClick={() => {
+                        removeItem.mutate(item.id);
+                      }}
+                    >
+                      Delete
+                    </button>
+                  ),
+                }}
+              />
             </div>
           ) : null}
 

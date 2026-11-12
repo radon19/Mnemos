@@ -228,7 +228,7 @@ export default function GrantsPage(): React.ReactNode {
               </p>
             </fieldset>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1">
                 <span className="field-label">Price per read (NEAR)</span>
                 <input
@@ -352,7 +352,7 @@ export default function GrantsPage(): React.ReactNode {
             role="dialog"
             aria-modal="true"
             aria-labelledby="revoke-title"
-            className="card w-full max-w-[32rem] px-6 py-6"
+            className="card max-h-[88dvh] w-full max-w-[32rem] overflow-y-auto px-6 py-6"
           >
             <h2 id="revoke-title" className="text-title">
               Revoke this grant
