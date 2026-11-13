@@ -1,14 +1,17 @@
 # Progress
 
-Updated: 2026-11-11
+Updated: 2026-11-13
 
 ## Current phase
 
-All seven phases are complete. The contract is deployed on NEAR testnet, the
-broker is verified against live NEAR AI Cloud with E2EE and a TEE attestation,
-the MCP server talks to the real chain, the web app passes its accessibility
-suite at 390, 768 and 1440 pixels, and the scripted demo runs the whole
+All phases are complete. The contract is deployed on NEAR testnet, the broker
+is verified against live NEAR AI Cloud with E2EE and a TEE attestation, the
+MCP server talks to the real chain, the web app passes its accessibility and
+responsive suites at 320 to 1920 pixels, and the scripted demo runs the whole
 product story against the deployed contract.
+
+The final work was the front door: a landing page that says plainly what the
+project does and a documentation page that says honestly what it does not do.
 
 ## Phase checklist
 
@@ -207,10 +210,38 @@ Everything the brief describes and the build did not have is now in place.
 - The broker's tables have a retention window, the logs are all JSON, the
   broker image runs as a non-root user, compose caps the resources, and CI
   runs `make check` the way a reviewer does.
+- The rate limiter and the activity stream have shared implementations, off by
+  default: `RATE_LIMIT_BACKEND=postgres` keeps one budget in the database and
+  the activity bus carries events over a Postgres channel, so a second replica
+  behaves like the first. The shared budget fails open, so a read is never
+  blocked because the limiter is down. Unit and integration tested
+  (`apps/broker/tests/test_shared.py`).
 
 ```text
 $ cd apps/broker && uv run pytest -q -m integration
-64 passed, 74 deselected in 10.18s
+70 passed, 74 deselected in 9.19s
+```
+
+## Phase 11 — the front door
+
+The owner asked for a landing page a first-time visitor can understand, a
+header that carries documentation, and screenshots assessed like a product.
+
+- The landing page now opens with the whole story in two sentences: the agent
+  can read your notes, you set the scope, the price and when it stops. It
+  then says what the deployment has done so far with live figures, walks the
+  five steps of a read in order, shows a real receipt, and closes with three
+  honest limits. There is no invented number and no testimonial.
+- A `/docs` page documents the read pipeline, the trust model, the contract
+  calls, the broker endpoints, the MCP tools, the app screens, how to run it,
+  and the limits. The navigation bar carries a Docs link, and the landing page
+  links to it from the header area and the closing call to action.
+- Both pages are covered by the accessibility and responsive suites, and the
+  documentation page is held to the same standard as the app.
+
+```text
+$ cd apps/web && pnpm exec playwright test
+  83 passed (8.1m)
 ```
 
 ## Phase 9 — responsive
@@ -260,11 +291,13 @@ git log --oneline -10
 
 ## Open issues
 
-- Day-rollover reset is unit-tested only; the sandbox `fast_forward(86_400)`
-  path takes ~14 minutes and was removed from the integration suite. Re-grant
-  reset is covered in the sandbox.
-- Rate limiting and the SSE activity stream are single-instance (in-process).
-  A multi-replica deployment needs a shared limiter and a shared bus.
+- Day-rollover reset is unit-tested, and the sandbox path exists as an opt-in
+  ignored test: crossing a simulated day costs about twelve minutes, so it is
+  not part of the default run (`cargo test --test integration -- --ignored`).
+  Re-grant reset is covered in the sandbox.
+- The rate limiter and the activity stream are shared when
+  `RATE_LIMIT_BACKEND=postgres` and `ACTIVITY_BUS_ENABLED=true` are set, and
+  local otherwise. The compose file runs one broker, so the default is local.
 - The sweeper can only expire requests the broker has already seen; a request
   created on chain and never sent to `/v1/ask` needs an indexer or an agent
   that calls `expire_request` itself.

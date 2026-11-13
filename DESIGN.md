@@ -89,7 +89,13 @@ than blank — and it never carries meaning.
 - Below 1024px the bar collapses: the section links move into a disclosure
   panel under the bar, and the owner block moves with them.
 - The landing page centres its hero, then opens into wide grids: four figure
-  cards, three quote cards, three step cards, three limit cards.
+  cards, three promise cards, five step cards, three limit cards and one
+  receipt block. It says what the project does in two sentences before it
+  shows a figure, and the closing call to action links to `/docs`.
+- The documentation page is held to the same standard as the app: a left
+  contents rail, measured prose, definition lists for the contract calls and
+  the endpoints, and the same honest limits section. It is reachable from the
+  navigation bar on every screen.
 - The app screens are left aligned and dense. A screen title at 1.75rem, one
   sentence of orientation, then cards that hold forms, tables and evidence.
 - Prose is measured: 54–76 characters per line, never the full width.

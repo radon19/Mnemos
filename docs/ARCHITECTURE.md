@@ -7,7 +7,7 @@
 | Mnemos contract | Rust, `near-sdk` 5.30 | Grants, caps, expiry, credit, receipts, refunds. It holds money and the access boundary. |
 | Broker | Python 3.12, FastAPI | The scope enforcer. Decrypts one scope, calls the model, filters the answer, settles the receipt. |
 | MCP server | TypeScript, `@modelcontextprotocol/sdk` 1.32 | The agent side: `ask_memory`, `list_grants`, `check_credit`. |
-| Web app | TypeScript, Next.js 16 | The owner side: setup, vault, grants, activity, earnings, red-team. |
+| Web app | TypeScript, Next.js 16 | The owner side: landing, documentation, setup, vault, grants, activity, earnings, red-team. |
 | Crypto | TypeScript and Python | The same envelope format, verified byte for byte against shared vectors. |
 
 ## The read path
@@ -124,7 +124,10 @@ health checks. The contract is separate: it is deployed to testnet with
 `./scripts/deploy-testnet.sh`, which is idempotent and prints the contract
 id.
 
-Rate limiting and the activity stream are single-instance by design: both
-live in the broker process. A deployment with more than one replica needs a
-shared limiter and a shared event bus; this is recorded as a limitation in
-`docs/SECURITY.md`.
+Rate limiting and the activity stream are local by default, because the
+compose file runs one broker. A deployment with more than one replica sets
+`RATE_LIMIT_BACKEND=postgres` and `ACTIVITY_BUS_ENABLED=true`, and both are
+then shared: one budget kept in the database, one activity stream carried
+over a Postgres channel. The shared budget fails open, so a read is never
+blocked because the limiter is down. This is recorded in `docs/SECURITY.md`
+and `docs/DECISIONS.md` (D-022).

@@ -139,10 +139,15 @@ itself to call `expire_request`.
 - Logs are structured JSON with no plaintext fields.
 - The broker refuses request bodies above 32 KiB, and the vault enforces a
   16 KiB item limit.
-- Rate limits are per instance: 60 sign-ins and 10 reads a minute by
-  default, 3 red-team runs a minute. A multi-replica deployment needs a
-  shared limiter, and the activity stream needs a shared bus. The compose
-  file runs one broker for that reason.
+- Rate limits are 60 sign-ins and 10 reads a minute by default, and 3
+  red-team runs a minute. With one broker they are kept in memory. A
+  multi-replica deployment sets `RATE_LIMIT_BACKEND=postgres` and every
+  replica then spends from one budget kept in the database; the shared
+  budget fails open, so a read is never blocked because the limiter is
+  down.
+- The activity stream is shared the same way: `ACTIVITY_BUS_ENABLED` carries
+  the events over a Postgres channel, so a read served by one replica
+  appears in the owner's ledger in every other replica.
 - Retention bounds the broker's tables: sign-in challenges are dropped after
   an hour, audit events after a month, deleted vault items after a month and
   read requests after a quarter.

@@ -91,7 +91,9 @@ price and a daily cap, and why the red-team screen reports residual risk
 instead of claiming a guarantee.
 
 The long version is in [`docs/TRUST_MODEL.md`](docs/TRUST_MODEL.md); the
-threat model is in [`docs/SECURITY.md`](docs/SECURITY.md).
+threat model is in [`docs/SECURITY.md`](docs/SECURITY.md). The running app
+carries the same explanation at `/docs`, and the landing page says what the
+project does in two sentences before it shows a figure.
 
 ## Repository
 

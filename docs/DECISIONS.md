@@ -273,3 +273,16 @@ screen offers a Read action that decrypts with the passphrase in the tab.
 Nothing is decrypted on the server, the passphrase is never stored, and the
 broker never sees the plaintext. The broker does not hand out its own wrap,
 because the owner does not need it.
+
+## D-022 — The limiter and the activity stream can be shared, but are not by default
+
+**Context.** The rate limiter and the activity stream both live in the broker
+process, so a second replica would give the owner a second budget and a
+second, incomplete ledger.
+
+**Decision.** Both have a shared implementation that is off by default:
+`RATE_LIMIT_BACKEND=postgres` keeps one counter in the database, and the
+activity bus carries events over a Postgres channel. The default stays local,
+because the deployment that ships here runs one broker and the local path
+costs no round trip on the read path. The shared budget fails open: a read
+is never blocked because the limiter cannot reach the database.
