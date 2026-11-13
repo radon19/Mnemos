@@ -495,3 +495,60 @@ async fn pause_and_withdrawals() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+/// The daily cap resets when the day index changes.
+///
+/// Crossing a UTC day in the sandbox costs one simulated day, which is about
+/// twelve minutes of wall clock (the sandbox produces a block roughly every
+/// millisecond of real time). The test is therefore opt-in:
+///
+/// ```text
+/// cargo test --test integration -- --ignored
+/// ```
+///
+/// The same behaviour is covered without any time travel by the unit test
+/// `daily_cap_blocks_then_resets_next_day`, which sets the block timestamp
+/// directly.
+#[tokio::test]
+#[ignore = "crossing a day in the sandbox takes about twelve minutes"]
+async fn the_daily_cap_resets_after_the_day_turns() -> anyhow::Result<()> {
+    let env = setup().await?;
+    create_grant(&env, &["travel"], PRICE, 1, 3 * DAY_NS, 128).await?;
+
+    // The first read uses the only read the cap allows.
+    env.agent
+        .call(env.contract.id(), "request_read")
+        .args_json(json!({"owner": env.owner.id(), "scope": "travel", "q_hash": HASH_A}))
+        .transact()
+        .await?
+        .into_result()?;
+
+    // The second read is refused: the cap for the day is used up.
+    expect_error(
+        &env,
+        &env.agent,
+        "request_read",
+        json!({"owner": env.owner.id(), "scope": "travel", "q_hash": HASH_A}),
+        "E_CAP_REACHED",
+    )
+    .await?;
+
+    // After the day turns, the cap is fresh again.
+    env.worker.fast_forward(86_400).await?;
+    env.agent
+        .call(env.contract.id(), "request_read")
+        .args_json(json!({"owner": env.owner.id(), "scope": "travel", "q_hash": HASH_A}))
+        .transact()
+        .await?
+        .into_result()?;
+
+    let grant: Value = env
+        .contract
+        .view("get_grant")
+        .args_json(json!({"owner": env.owner.id(), "agent": env.agent.id()}))
+        .await?
+        .json()?;
+    assert_eq!(grant["used_today"], 1);
+    assert_eq!(grant["remaining_today"], 0);
+    Ok(())
+}
