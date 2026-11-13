@@ -11,7 +11,16 @@ import { expect, test } from "@playwright/test";
 
 const WIDTHS = [320, 360, 390, 414, 480, 540, 640, 768, 834, 1024, 1280, 1440, 1920];
 
-const PATHS = ["/", "/setup", "/vault", "/grants", "/activity", "/earnings", "/redteam"];
+const PATHS = [
+  "/",
+  "/docs",
+  "/setup",
+  "/vault",
+  "/grants",
+  "/activity",
+  "/earnings",
+  "/redteam",
+];
 
 /**
  * Sign in once and reuse the session.

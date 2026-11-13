@@ -44,7 +44,15 @@ test("the owner signs in and the vault accepts an encrypted note", async ({ page
   await page.getByLabel("Passphrase", { exact: true }).fill(PASSPHRASE);
   await page.getByRole("button", { name: "Unlock the vault" }).click();
 
-  const before = await page.locator("tbody tr").count();
+  // The table is capped by the page size, so the count is taken from the
+  // broker rather than from the rows on screen.
+  const count = async (): Promise<number> => {
+    const response = await page.request.get("http://localhost:8000/v1/vault/items?scope=travel&limit=100");
+    const body = (await response.json()) as { items: unknown[] };
+    return body.items.length;
+  };
+
+  const before = await count();
   const note = `Flight to Lisbon on 14 March at 09:15, reference ${Date.now()}`;
   await page.getByRole("textbox", { name: "Note" }).fill(note);
   await page.getByRole("button", { name: "Encrypt and store" }).click();
@@ -52,7 +60,17 @@ test("the owner signs in and the vault accepts an encrypted note", async ({ page
   await expect(page.getByText("Note encrypted on this device and stored.")).toBeVisible({
     timeout: 20_000,
   });
-  await expect(page.locator("tbody tr")).toHaveCount(before + 1);
+  await expect.poll(count).toBe(before + 1);
+
+  // Leave the vault as it was found.
+  const listed = await page.request.get(
+    "http://localhost:8000/v1/vault/items?scope=travel&limit=100",
+  );
+  const items = ((await listed.json()) as { items: { id: string }[] }).items;
+  const newest = items[0];
+  if (newest !== undefined) {
+    await page.request.delete(`http://localhost:8000/v1/vault/items/${newest.id}`);
+  }
 });
 
 test("the red-team run reports each attack", async ({ page }) => {

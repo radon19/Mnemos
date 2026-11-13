@@ -75,7 +75,7 @@
   --text-lede--line-height: 1.55;
   --text-title: 1.625rem;
   --text-title--line-height: 1.2;
-  --text-display: clamp(2.25rem, 5.2vw, 4.25rem);
+  --text-display: clamp(2.25rem, 4.6vw, 3.75rem);
   --text-display--line-height: 1.02;
 
   --radius-card: 1.25rem;

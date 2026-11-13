@@ -21,6 +21,7 @@ async function analyse(page: Page): Promise<void> {
 
 const SCREENS = [
   { path: "/", name: "landing" },
+  { path: "/docs", name: "docs" },
   { path: "/setup", name: "setup" },
   { path: "/vault", name: "vault" },
   { path: "/grants", name: "grants" },

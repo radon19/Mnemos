@@ -15,6 +15,7 @@ const NAV: { href: string; label: string }[] = [
   { href: "/activity", label: "Activity" },
   { href: "/earnings", label: "Earnings" },
   { href: "/redteam", label: "Red-team" },
+  { href: "/docs", label: "Docs" },
 ];
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }): React.ReactNode {
