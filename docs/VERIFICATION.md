@@ -8,54 +8,80 @@ reconstructed or paraphrased.
 ```text
 $ ./scripts/check.sh
 == contract: format, clippy, unit tests ==
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.20s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.23s
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.21s
      Running unittests src/lib.rs (target/debug/deps/mnemos_contract-f2c6d7952d889d1c)
-running 13 tests
-test tests::invalid_inputs_are_rejected ... ok
+
+running 14 tests
 test tests::broker_and_grant_are_registered_and_viewed ... ok
-test tests::expiry_restores_credit_and_is_permissionless ... ok
-test tests::grant_upsert_resets_usage_and_unrevokes ... ok
-test tests::refund_restores_credit_and_cap ... ok
-test tests::non_broker_cannot_record_or_refund ... ok
-test tests::pause_blocks_new_grants_and_reads ... ok
-test tests::read_escrows_credit_and_receipt_pays_owner ... ok
-test tests::daily_cap_blocks_then_resets_next_day ... ok
+test tests::grants_by_owner_lists_every_grant_the_owner_gave ... ok
+test tests::invalid_inputs_are_rejected ... ok
 test tests::withdrawal_success_callbacks_emit_events ... ok
+test tests::expiry_restores_credit_and_is_permissionless ... ok
+test tests::non_broker_cannot_record_or_refund ... ok
+test tests::refund_restores_credit_and_cap ... ok
+test tests::read_escrows_credit_and_receipt_pays_owner ... ok
+test tests::grant_upsert_resets_usage_and_unrevokes ... ok
+test tests::daily_cap_blocks_then_resets_next_day ... ok
 test tests::withdrawal_failure_callbacks_restore_balances ... ok
+test tests::pause_blocks_new_grants_and_reads ... ok
 test tests::revoked_expired_scope_and_credit_paths ... ok
 test tests::recent_receipts_ring_is_capped_and_newest_first ... ok
-test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.49s
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.59s
+
+
 == crypto: build, typecheck, unit + vector tests ==
 $ tsc -p tsconfig.json
 $ vitest run
+
  RUN  v5.1.0 /home/radon/HACKS/Mnemos/packages/crypto
+
+
  Test Files  1 passed (1)
       Tests  21 passed (21)
-   Start at  12:49:43
-   Duration  5.25s (tests 88%, import 12%)
+   Start at  11:08:16
+   Duration  5.00s (tests 88%, import 12%)
+
+
 == broker: ruff, mypy, unit tests ==
 All checks passed!
-57 files already formatted
-Success: no issues found in 37 source files
-.....................................................................    [100%]
-69 passed, 54 deselected in 0.69s
+66 files already formatted
+Success: no issues found in 41 source files
+........................................................................ [ 98%]
+.                                                                        [100%]
+73 passed, 71 deselected in 0.75s
+
 == mcp: typecheck, lint, tests ==
 $ tsc -p tsconfig.json --noEmit
 $ eslint .
 $ vitest run
+
  RUN  v5.1.0 /home/radon/HACKS/Mnemos/apps/mcp
+
+
  Test Files  5 passed (5)
-      Tests  32 passed (32)
-   Start at  12:49:16
-   Duration  1.23s (tests 75%, import 22%, other 3%)
+      Tests  34 passed (34)
+   Start at  11:08:29
+   Duration  1.26s (tests 74%, import 22%, transform 2%, worker 1%)
+
+
 == web: typecheck, lint, tests ==
-No projects matched the filters in "/home/radon/HACKS/Mnemos"
+$ tsc --noEmit
+$ eslint .
+$ vitest run
+
+ RUN  v5.1.0 /home/radon/HACKS/Mnemos/apps/web
+
+
+ Test Files  2 passed (2)
+      Tests  14 passed (14)
+   Start at  11:08:36
+   Duration  118ms (import 40%, transform 28%, tests 18%, worker 13%, environment 1%)
+
 
 All checks passed.
 ```
-
-The web section is a no-op until the web app lands in Phase 6.
 
 
 ## Phase 2 — contract
@@ -342,14 +368,25 @@ All checks passed.
 ```text
 $ ./scripts/test-e2e.sh
 == contract: near-workspaces sandbox tests ==
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 36.49s
+running 3 tests
+test full_lifecycle_and_negative_paths ... ok
+test pause_and_withdrawals ... ok
+test the_daily_cap_resets_after_the_day_turns ... ignored, crossing a day in the sandbox takes about twelve minutes
+
+test result: ok. 2 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 36.53s
+
 == broker: integration tests against Postgres ==
-62 passed, 70 deselected in 7.86s
+70 passed, 74 deselected in 8.93s
+
 == web: Playwright end-to-end ==
-  36 passed (3.4m)
+  84 passed (8.5m)
 
 End-to-end suite passed.
 ```
+
+The Playwright suite covers landing, `/docs`, setup, vault, grants, activity,
+earnings and red-team, including accessibility and the responsive sweep at
+320, 360, 390, 414, 480, 540, 640, 768, 834, 1024, 1280, 1440 and 1920 pixels.
 
 The whole stack, from a clean build:
 
@@ -487,10 +524,16 @@ real values of the API key, the session secret, the broker key, the agent and
 owner keys, the Postgres password and the demo signer key:
 
 ```text
-scanning the whole history for 15 secret values
-commits scanned: 7
+scanning the whole history for 14 secret values
+commits scanned: 20
+blobs checked: 560
 SECRET HITS: none
 ```
+
+The scan covers NEAR account secret keys, the NEAR AI API key, the broker
+X25519 key, the session secret, the Postgres password and the demo signer
+key. Public testnet account ids and the on-chain broker key fingerprint are
+intentional and documented.
 
 
 
