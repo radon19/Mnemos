@@ -1,5 +1,6 @@
 import { Account, JsonRpcProvider, KeyPairSigner, type KeyPairString } from "near-api-js";
 import { signMessage } from "near-api-js/nep413";
+import { demoFailure, requireLocalDemo } from "@/lib/server/demo-guard";
 
 /**
  * Local demo signer.
@@ -25,7 +26,16 @@ function hexToBytes(value: string): Uint8Array {
   return bytes;
 }
 
-export async function POST(): Promise<Response> {
+export async function POST(request: Request): Promise<Response> {
+  try {
+    requireLocalDemo(request);
+    return await signInDemo();
+  } catch (error) {
+    return demoFailure(error);
+  }
+}
+
+async function signInDemo(): Promise<Response> {
   const secretKey = process.env.DEMO_OWNER_SECRET_KEY ?? "";
   const owner = process.env.MNEMOS_OWNER_ACCOUNT ?? "";
   if (secretKey === "" || owner === "") {
@@ -75,9 +85,8 @@ export async function POST(): Promise<Response> {
     }),
   });
   if (!verifyResponse.ok) {
-    const text = await verifyResponse.text();
     return Response.json(
-      { error: `the broker refused the signature: ${text.slice(0, 200)}` },
+      { error: "The broker refused the demo signature. Check the configured owner key with make doctor." },
       { status: 502 },
     );
   }
