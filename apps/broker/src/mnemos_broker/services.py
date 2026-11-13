@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from .activity import ActivityPublisher
+from .activity_bus import ActivityBus
 from .chain import ChainProtocol
 from .config import Settings
 from .inference import InferenceProtocol
@@ -25,6 +26,7 @@ class Services:
     chain: ChainProtocol
     inference: InferenceProtocol
     publisher: ActivityPublisher
+    bus: ActivityBus
     limiter: RateLimiter
     jobs: JobRegistry
     pipeline: AskPipeline

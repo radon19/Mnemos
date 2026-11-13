@@ -26,7 +26,9 @@ from mnemos_broker.near.keys import NearKeyPair, b58encode, public_key_bytes_of
 
 from .fakes import FakeChain, FakeInference
 
-TABLES = "audit_events, auth_challenges, owner_accounts, read_requests, vault_items"
+TABLES = (
+    "audit_events, auth_challenges, owner_accounts, read_requests, vault_items, rate_limit_counters"
+)
 
 
 def _test_database_url() -> str:

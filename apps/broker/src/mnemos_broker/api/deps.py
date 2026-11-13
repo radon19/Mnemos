@@ -44,10 +44,10 @@ def optional_owner(request: Request) -> SessionClaims | None:
         return None
 
 
-def limit_auth(request: Request) -> None:
+async def limit_auth(request: Request) -> None:
     services = get_services(request)
     client = request.client.host if request.client else "unknown"
-    if not services.limiter.allow(
+    if not await services.limiter.allow(
         f"auth:{client}",
         capacity=services.settings.auth_rate_limit_per_minute,
         per_seconds=60.0,
@@ -55,9 +55,9 @@ def limit_auth(request: Request) -> None:
         raise MnemosError(429, E_RATE_LIMITED, "too many authentication attempts; wait a minute")
 
 
-def limit_ask(request: Request, agent: str) -> None:
+async def limit_ask(request: Request, agent: str) -> None:
     services = get_services(request)
-    if not services.limiter.allow(
+    if not await services.limiter.allow(
         f"ask:{agent}",
         capacity=services.settings.ask_rate_limit_per_minute,
         per_seconds=60.0,

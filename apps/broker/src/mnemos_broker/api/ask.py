@@ -16,7 +16,7 @@ async def ask(
     request: Request,
 ) -> AskResponse:
     services = get_services(request)
-    limit_ask(request, body.agent)
+    await limit_ask(request, body.agent)
     return await services.pipeline.ask(body)
 
 
@@ -26,5 +26,5 @@ async def ask_slash(
     request: Request,
 ) -> AskResponse:
     services = get_services(request)
-    limit_ask(request, body.agent)
+    await limit_ask(request, body.agent)
     return await services.pipeline.ask(body)

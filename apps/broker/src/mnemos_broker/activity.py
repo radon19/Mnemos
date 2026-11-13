@@ -10,10 +10,16 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Protocol
 
 MAX_QUEUE = 128
 MAX_SUBSCRIBERS_PER_OWNER = 16
+
+
+class EventPublisher(Protocol):
+    """Anything that can hand an event to the owner's subscribers."""
+
+    def publish(self, owner: str, payload: dict[str, Any]) -> None: ...
 
 
 class ActivityPublisher:

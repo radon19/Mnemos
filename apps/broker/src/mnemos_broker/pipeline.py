@@ -27,7 +27,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from .activity import ActivityPublisher
+from .activity import EventPublisher
 from .chain import (
     ChainGrant,
     ChainProtocol,
@@ -112,7 +112,7 @@ class AskPipeline:
         session_factory: async_sessionmaker[AsyncSession],
         chain: ChainProtocol,
         inference: InferenceProtocol,
-        publisher: ActivityPublisher,
+        publisher: EventPublisher,
         now: Callable[[], datetime] | None = None,
     ) -> None:
         self.settings = settings

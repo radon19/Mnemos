@@ -37,7 +37,7 @@ async def run(
     claims: SessionClaims = Depends(require_owner),
 ) -> JobStarted:
     services = get_services(request)
-    if not services.limiter.allow(
+    if not await services.limiter.allow(
         f"redteam:{claims.account}",
         capacity=services.settings.redteam_rate_limit_per_minute,
         per_seconds=60.0,

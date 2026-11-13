@@ -27,6 +27,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.responses import Response
 
 from .activity import ActivityPublisher
+from .activity_bus import ActivityBus
 from .api import activity, ask, auth, broker, health, redteam, vault
 from .chain import ChainClient, ChainProtocol
 from .config import Settings, get_settings
@@ -40,6 +41,7 @@ from .ratelimit import RateLimiter
 from .redteam import RedteamRunner
 from .retention import Retention
 from .services import Services
+from .shared_limiter import SharedLimiter
 from .sweeper import Sweeper
 
 REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
@@ -157,14 +159,18 @@ def create_app(
         inference = NearAiInferenceEngine(configured)
 
     publisher = ActivityPublisher()
-    limiter = RateLimiter()
+    bus = ActivityBus(publisher, configured.database_url)
+    shared_limiter: SharedLimiter | None = None
+    if configured.rate_limit_backend == "postgres":
+        shared_limiter = SharedLimiter(session_factory)
+    limiter = RateLimiter(shared=shared_limiter)
     jobs = JobRegistry()
     pipeline = AskPipeline(
         settings=configured,
         session_factory=session_factory,
         chain=chain,
         inference=inference,
-        publisher=publisher,
+        publisher=bus,
         now=now,
     )
     retention = (
@@ -194,6 +200,7 @@ def create_app(
         chain=chain,
         inference=inference,
         publisher=publisher,
+        bus=bus,
         limiter=limiter,
         jobs=jobs,
         pipeline=pipeline,
@@ -209,6 +216,10 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         tasks: list[asyncio.Task[None]] = []
+        if services.settings.activity_bus_enabled:
+            await services.bus.start()
+        if shared_limiter is not None:
+            await shared_limiter.ensure_table()
         if services.sweeper is not None:
             tasks.append(asyncio.create_task(services.sweeper.run_forever(), name="mnemos-sweeper"))
         if retention is not None:
@@ -225,6 +236,7 @@ def create_app(
                     await asyncio.wait_for(task, timeout=5.0)
                 if not task.done():
                     task.cancel()
+            await services.bus.close()
             await services.jobs.close()
             if services.owns_inference:
                 await services.inference.close()
