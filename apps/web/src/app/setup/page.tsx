@@ -302,7 +302,7 @@ export default function SetupPage(): React.ReactNode {
                 </Button>
               </div>
             ) : (
-              <form
+              <form noValidate
                 className="flex flex-wrap items-end gap-3"
                 onSubmit={(event) => {
                   event.preventDefault();

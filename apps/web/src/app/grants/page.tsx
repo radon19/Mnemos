@@ -13,7 +13,7 @@ import { formatNear, formatTimestamp, truncateAccount } from "@/lib/format";
 import { callView, connectWallet, sendContractCall, walletAccounts, type GrantView } from "@/lib/near";
 import { describeError, useSession } from "@/lib/session";
 
-const SCOPES = ["travel", "health", "work", "preferences"];
+import { KNOWLEDGE_SCOPES as SCOPES } from "@/lib/scopes";
 
 
 export default function GrantsPage(): React.ReactNode {
@@ -162,7 +162,7 @@ export default function GrantsPage(): React.ReactNode {
           <h2 id="new-grant" className="text-title">
             New grant
           </h2>
-          <form
+          <form noValidate
             className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();

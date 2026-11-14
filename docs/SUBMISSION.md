@@ -1,75 +1,48 @@
-# Submission
+# Submission drafts
 
-Drafted, not posted. Nothing here has been sent anywhere.
+Nothing has been posted or submitted. Attach the real demo video and add your
+public repository URL before posting.
 
-## Hackathon submission
+## Form description
 
-> **Mnemos — user-owned AI memory with metered, revocable access on NEAR**
->
-> You keep your notes. An AI agent can ask questions about them, but only
-> through a grant you made on chain: named scopes, a price per read, a daily
-> cap, an expiry, and a token budget. Revoke it and the next read fails.
->
-> How it works. Your browser encrypts each note with a key derived from your
-> passphrase and wraps a copy for the broker's X25519 public key. Plaintext
-> never leaves the device, and the database only ever holds ciphertext. When
-> an agent asks, the contract charges the agent and creates the read request
-> *before* anything is decrypted, so a failed read is refunded, never paid
-> for. The broker decrypts exactly one scope, asks NEAR AI Cloud with
-> end-to-end encryption, and refuses to use an answer whose TEE attestation
-> does not verify. An output filter rejects any answer that reproduces twelve
-> or more consecutive words of your memory, then refunds. Every served read
-> leaves a hash-only receipt on chain and pays you.
->
-> What we shipped. A Rust contract on `near-sdk` 5 with grants, caps, expiry,
-> credit, receipts and refunds. A FastAPI broker with a Postgres schema that
-> has no column for plaintext. An MCP server with `ask_memory`,
-> `list_grants` and `check_credit`, so any MCP client can use it, plus a CLI for
-> scripts. A Next.js web app with the vault, the
-> grants, a live receipt ledger, earnings and a red-team screen. Cross
-> language crypto vectors that both implementations reproduce byte for byte.
->
-> What we will not overclaim. The model host cannot read the prompt: the
-> completion is end to end encrypted inside an attested TEE. But repeated
-> narrow questions can still leak facts, and NEAR's gateway signature does
-> not yet chain to the model provider's signature. So the red-team screen
-> reports residual risk honestly, and the caps and prices are the mitigation.
->
-> Live on NEAR testnet: `mnemos-contract-76badc8e.testnet`.
-> MIT licensed, built during the window. Independent of Agent Bureau.
+Mnemos — private expertise, paid answers, revocable access.
 
-(1,987 characters)
+AI agents need useful knowledge without receiving an entire private notebook. Mnemos lets an expert encrypt notes in the browser, grant one knowledge scope, price each answer, cap reads, set expiry and revoke future access.
+
+The laptop demo runs a real paid read on NEAR testnet through the same ask_memory implementation as our MCP server. The owner-run broker verifies the signed request, decrypts the allowed scope, calls a TEE-hosted model on NEAR AI Cloud with E2EE, filters the answer and settles a hash-only receipt. Failed reads refund the read fee; gas may still apply.
+
+Each inference uses fresh SDK-generated attestation nonces and verified quotes before the prompt is sent. Answers require a provider_tee signature and one matching verified model report. A real negative check proves that changing the nonce fails verification. The local agent uses a separate function-call key restricted to two methods on one contract.
+
+A separate Agent API / NEAR Intents offer implements owner-signed wallet policies, grants, 0.01 USDC transfers, exact settlement checks, durable idempotency and refund recovery. Real destination, transfer-limit and revoked-grant refusals are verified. Its mainnet wallets are intentionally unfunded: successful USDC purchases/refunds and USD-budget rejection are not claimed as live-verified.
+
+Built with Rust near-sdk, FastAPI/Postgres, cross-language encryption, MCP and Next.js. The demo shows a verified answer, real testnet payment, private-scope denial and refusal after revocation.
+
+Trust is explicit: the broker sees plaintext; the contract proves settlement, not inference. Facts can leak through repeated questions. Revocation cannot erase delivered answers.
+
+Tracks: Privacy & Private AI; AI Security & Defense; Agent Economy.
+MIT. Independent of sibling project Agent Bureau.
+
+Character count: 1882 (maximum 2,000).
 
 ## X post
 
-> Mnemos is live on NEAR testnet: your notes stay encrypted in your browser,
-> and an AI agent can only read the scope you granted, at your price, under
-> your cap, until you revoke it. Every read leaves a hash-only receipt on
-> chain and pays you.
->
-> Built with near-sdk 5, NEAR AI Cloud TEE (E2EE + verified attestation),
-> FastAPI, and the official MCP SDK.
->
-> `mnemos-contract-76badc8e.testnet`
->
-> [link to the repository]
+AI agents can buy an answer without receiving your whole notebook.
 
-(413 characters)
+Mnemos: scoped access, paid reads, TEE evidence, receipts—and revocation.
 
-## Demo script
+Built at NEAR HACKATHON @NEARProtocol #NEARHackathon
 
-The demo that backs both texts:
+Watch the real testnet demo below. Repo link in reply.
 
-1. The owner signs in to the broker with a NEP-413 signature.
-2. The owner stores an encrypted note in the `travel` scope.
-3. The owner creates a grant for the demo agent: scope `travel`, 0.01 NEAR a
-   read, 5 reads a day, one day.
-4. The agent asks a question through the MCP server. The answer comes back
-   with a `provider_tee` signature, an `UpToDate` TCB status and a receipt
-   hash.
-5. The receipt is shown on chain.
-6. The red-team attack set runs against the same vault.
-7. The owner revokes the grant.
-8. The same read is denied with `E_GRANT_REVOKED`.
+Character count: 251 (plain characters; verify in the X composer).
 
-`make demo` runs exactly this and prints the evidence.
+## Before submitting
+
+- Publish the repository with an MIT license and sibling disclosure.
+- Attach the MP4 demo or screenshots to the X post. Add the public repository link.
+- Include @NEARProtocol, #NEARHackathon and the fact it was built at NEAR HACKATHON.
+- Submit repository and demo-post links at https://nearhackathon.com/.
+- Use your own/team payout wallet in the form, not a disposable testnet demo account.
+- Review every claim against docs/VERIFICATION.md.
+
+Narration, startup and recovery: [DEMO.md](DEMO.md).

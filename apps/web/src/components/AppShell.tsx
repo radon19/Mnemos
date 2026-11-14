@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { ThemeToggle } from "./ThemeToggle";
+import { BrandMark } from "./BrandMark";
 import { useSession } from "@/lib/session";
 import { truncateAccount } from "@/lib/format";
 
 const NAV: { href: string; label: string }[] = [
+  { href: "/exchange", label: "Exchange" },
   { href: "/setup", label: "Setup" },
   { href: "/vault", label: "Vault" },
   { href: "/grants", label: "Grants" },
@@ -21,7 +23,7 @@ const NAV: { href: string; label: string }[] = [
 function NavLinks({ onNavigate }: { onNavigate?: () => void }): React.ReactNode {
   const pathname = usePathname();
   return (
-    <ul className="flex flex-wrap items-center gap-1">
+    <ul className="flex flex-wrap items-center gap-1 xl:flex-nowrap">
       {NAV.map((item) => {
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
@@ -49,7 +51,7 @@ function OwnerBlock(): React.ReactNode {
   const { status, account, demo, signIn, signOut } = useSession();
   if (status === "signed-in" && account !== null) {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-3">
         <span className="hidden max-w-[10rem] items-center sm:flex">
           <span className="sr-only">{account}</span>
           <span aria-hidden="true" className="hash truncate text-caption text-muted">
@@ -57,13 +59,13 @@ function OwnerBlock(): React.ReactNode {
           </span>
         </span>
         {demo ? (
-          <span className="hidden rounded-full bg-accent-soft px-2.5 py-1 text-micro text-accent-ink md:inline">
+          <span className="hidden whitespace-nowrap rounded-full bg-accent-soft px-2.5 py-1 text-micro text-accent-ink md:inline">
             Demo signer
           </span>
         ) : null}
         <button
           type="button"
-          className="rounded-full border border-rule px-3 py-1.5 text-caption text-muted transition-colors hover:border-ink hover:text-ink"
+          className="min-h-11 whitespace-nowrap rounded-full border border-rule px-3 py-1.5 text-caption text-muted transition-colors hover:border-ink hover:text-ink"
           onClick={() => {
             void signOut();
           }}
@@ -88,6 +90,7 @@ function OwnerBlock(): React.ReactNode {
 
 export function AppShell({ children }: { children: React.ReactNode }): React.ReactNode {
   const [menuOpen, setMenuOpen] = useState(false);
+  const landing = usePathname() === "/";
 
   return (
     <div className="min-h-dvh">
@@ -99,34 +102,34 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
       </a>
 
       <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5 sm:pt-4">
-        <div className="mx-auto flex max-w-[1180px] items-center gap-3 rounded-full border border-rule bg-surface px-3 py-2 shadow-[var(--shadow-card)] sm:px-4">
-          <Link href="/" className="flex min-h-11 items-center gap-2.5 pr-1">
-            <span className="mark" aria-hidden="true" />
+        <div className={`mx-auto flex ${landing ? "marketing-nav" : "max-w-[1180px]"} items-center gap-3 rounded-full border border-rule bg-surface px-3 py-2 shadow-[var(--shadow-card)] sm:px-4`}>
+          <Link href="/" className="flex min-h-11 shrink-0 items-center gap-2.5 pr-1">
+            <BrandMark />
             <span className="font-display text-[1.0625rem] font-semibold tracking-tight">
               Mnemos
             </span>
           </Link>
 
-          <nav aria-label="Sections" className="hidden md:block">
+          <nav aria-label="Sections" className="hidden xl:block">
             <NavLinks />
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <div className="hidden lg:block">
+            <div className="hidden xl:block">
               <OwnerBlock />
             </div>
             <ThemeToggle />
             <Link
-              href="/setup"
-              className="hidden min-h-11 rounded-full bg-ink px-4 py-2 text-caption text-canvas transition-opacity hover:opacity-90 lg:inline-flex"
+              href="/exchange"
+              className="hidden min-h-11 whitespace-nowrap rounded-full bg-ink px-4 py-2 text-caption text-canvas transition-opacity hover:opacity-90 lg:inline-flex xl:hidden"
             >
-              Open the ledger
+              Try the demo
             </Link>
             <button
               type="button"
               aria-expanded={menuOpen}
               aria-controls="mobile-nav"
-              className="min-h-11 rounded-full border border-rule px-3 py-1.5 text-caption text-ink lg:hidden"
+              className="min-h-11 rounded-full border border-rule px-3 py-1.5 text-caption text-ink xl:hidden"
               onClick={() => {
                 setMenuOpen(!menuOpen);
               }}
@@ -142,7 +145,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.Rea
         <div
           id="mobile-nav"
           hidden={!menuOpen}
-          className="mx-auto mt-2 max-w-[1180px] rounded-[var(--radius-card)] border border-rule bg-surface p-4 shadow-[var(--shadow-card)] lg:hidden"
+          className="mx-auto mt-2 max-w-[1180px] rounded-[var(--radius-card)] border border-rule bg-surface p-4 shadow-[var(--shadow-card)] xl:hidden"
         >
           <nav aria-label="Sections">
             <NavLinks

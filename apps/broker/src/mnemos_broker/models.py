@@ -1,9 +1,8 @@
 """Broker persistence models.
 
-The tables mirror BUILD_BRIEF section 7 with two additions that the product
-needs: ``owner_accounts`` stores the per-owner PBKDF2 salt, and read requests
-carry the settlement transaction hashes so the activity screen can link to the
-explorer. No plaintext memory, question text or answer text is ever stored.
+The schema stores encrypted notes, owner KDF salts, request state and payment
+evidence. Read records include settlement identifiers for the activity ledger.
+No plaintext memory, question text or answer text is stored in these tables.
 """
 
 from __future__ import annotations
@@ -116,6 +115,27 @@ class ReadRequest(Base):
     attestation: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+class CommerceRead(Base):
+    """Intents paid reads, distinct from testnet contract receipts; no plaintext."""
+
+    __tablename__ = "commerce_reads"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    owner: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    terms: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="pending")
+    payment: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    payment_operation: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    refund: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    refund_operation: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    attestation: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    answer_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
 
 class AuthChallenge(Base):

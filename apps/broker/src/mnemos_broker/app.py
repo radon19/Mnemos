@@ -28,7 +28,7 @@ from starlette.responses import Response
 
 from .activity import ActivityPublisher
 from .activity_bus import ActivityBus
-from .api import activity, ask, auth, broker, health, redteam, vault
+from .api import activity, ask, auth, broker, commerce, health, redteam, vault
 from .chain import ChainClient, ChainProtocol
 from .config import Settings, get_settings
 from .db import create_engine, create_session_factory
@@ -317,6 +317,7 @@ def create_app(
         broker.router,
         vault.router,
         ask.router,
+        commerce.router,
         activity.router,
         redteam.router,
     ):

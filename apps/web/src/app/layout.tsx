@@ -32,7 +32,11 @@ export const metadata: Metadata = {
   title: "Mnemos — metered, revocable memory access on NEAR",
   description:
     "Keep notes encrypted in your own vault. Let an AI agent read one scope, for a price, under a daily cap, and leave a hash-only receipt on chain.",
-  icons: { icon: "/icon.svg" },
+  // A new URL makes browsers replace the previously cached ledger icon.
+  icons: {
+    icon: [{ url: "/icon.svg?v=mnemos-m-2", type: "image/svg+xml", sizes: "any" }],
+    shortcut: "/icon.svg?v=mnemos-m-2",
+  },
 };
 
 /**

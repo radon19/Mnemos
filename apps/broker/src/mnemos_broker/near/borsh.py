@@ -55,6 +55,24 @@ def action_deploy_contract(code: bytes) -> bytes:
     return u8(1) + byte_vec(code)
 
 
+def action_add_function_call_key(
+    public_key: bytes, receiver: str, methods: list[str], allowance: int
+) -> bytes:
+    if len(public_key) != 32 or not methods or allowance <= 0:
+        raise ValueError("a restricted key needs an Ed25519 key, named methods and gas allowance")
+    return (
+        u8(5)
+        + u8(0)
+        + public_key
+        + u64(0)
+        + u8(0)
+        + u8(1)
+        + u128(allowance)
+        + string(receiver)
+        + vec(string(method) for method in methods)
+    )
+
+
 def transaction(
     *,
     signer_id: str,

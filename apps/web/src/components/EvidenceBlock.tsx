@@ -78,6 +78,8 @@ export function EvidenceBlock({
       label: "Verified at",
       value: formatTimestamp(attestation?.verified_at ?? null),
     },
+    { label: "Fresh preflight", value: attestation?.fresh_preflight === true ? "New nonce and verified evidence for this inference" : "Not recorded for this historical read" },
+    { label: "Model reports", value: typeof attestation?.model_attestations === "number" ? attestation.model_attestations : "—" },
     { label: "Chat id", value: <span className="hash break-all">{chatId ?? "—"}</span> },
     { label: "Served at", value: formatTimestamp(servedAt) },
     {

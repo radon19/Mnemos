@@ -14,7 +14,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mnemos}
       POSTGRES_DB: ${POSTGRES_DB:-mnemos}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - mnemos-pgdata:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/10-mnemos-test.sql:ro
@@ -35,7 +35,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mnemos}:${POSTGRES_PASSWORD:-mnemos}@postgres:5432/${POSTGRES_DB:-mnemos}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,10 +70,16 @@ services:
       NEXT_PUBLIC_BROKER_RECIPIENT: ${NEXT_PUBLIC_BROKER_RECIPIENT:-localhost:8000}
       NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-false}
       DEMO_OWNER_SECRET_KEY: ${DEMO_OWNER_SECRET_KEY:-}
+      MNEMOS_LOCAL_DEMO: ${MNEMOS_LOCAL_DEMO:-false}
       MNEMOS_OWNER_ACCOUNT: ${MNEMOS_OWNER_ACCOUNT:-}
+      MNEMOS_AGENT_ACCOUNT: ${MNEMOS_AGENT_ACCOUNT:-}
+      MNEMOS_AGENT_KEY: ${MNEMOS_AGENT_KEY:-}
+      MNEMOS_REQUEST_GAS: ${MNEMOS_REQUEST_GAS:-30000000000000}
+      MNEMOS_CONTRACT_ID: ${MNEMOS_CONTRACT_ID:-}
+      NEAR_NETWORK: ${NEAR_NETWORK:-testnet}
       NEAR_RPC_URL: ${NEAR_RPC_URL:-https://test.rpc.fastnear.com}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       broker:
         condition: service_healthy

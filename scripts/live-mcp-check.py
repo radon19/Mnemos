@@ -32,14 +32,16 @@ def main() -> int:
         **os.environ,
         "MNEMOS_CONTRACT_ID": contract["account_id"],
         "MNEMOS_AGENT_ACCOUNT": agent["account_id"],
-        "MNEMOS_AGENT_KEY": agent["secret_key"],
-        "MNEMOS_BROKER_URL": os.environ.get("MNEMOS_BROKER_URL", "http://localhost:8000"),
+        "MNEMOS_AGENT_KEY": json.loads(
+            (ROOT / ".secrets" / "agent_runtime_key.json").read_text()
+        )["secret_key"],
+        "MNEMOS_BROKER_URL": os.environ.get(
+            "MNEMOS_BROKER_URL", "http://localhost:8000"
+        ),
         "MNEMOS_BROKER_RECIPIENT": os.environ.get(
             "MNEMOS_BROKER_RECIPIENT", "localhost:8000"
         ),
-        "NEAR_RPC_URL": os.environ.get(
-            "NEAR_RPC_URL", "https://test.rpc.fastnear.com"
-        ),
+        "NEAR_RPC_URL": os.environ.get("NEAR_RPC_URL", "https://test.rpc.fastnear.com"),
         "MNEMOS_NETWORK_ID": "testnet",
     }
 

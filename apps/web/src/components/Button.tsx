@@ -26,11 +26,13 @@ export function Button({
   tone = "primary",
   className = "",
   type = "button",
+  onClick,
   ...rest
 }: ButtonProps): React.ReactNode {
   return (
     <button
       type={type}
+      onClick={onClick}
       className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2 text-body md:min-h-10 transition-colors disabled:cursor-not-allowed ${TONE[tone]} ${className}`}
       {...rest}
     />

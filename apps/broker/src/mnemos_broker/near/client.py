@@ -98,7 +98,7 @@ class NearClient:
         return json.loads(data.decode("utf-8"))
 
     async def view_access_key(self, account_id: str, public_key: str) -> dict[str, Any]:
-        return await self._rpc(
+        result = await self._rpc(
             "query",
             {
                 "request_type": "view_access_key",
@@ -107,6 +107,9 @@ class NearClient:
                 "public_key": public_key,
             },
         )
+        if result.get("error"):
+            raise NearRpcError(str(result["error"]))
+        return result
 
     async def view_account(self, account_id: str) -> dict[str, Any]:
         return await self._rpc(

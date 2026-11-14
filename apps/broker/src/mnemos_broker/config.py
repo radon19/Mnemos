@@ -40,8 +40,19 @@ class Settings(BaseSettings):
     allowed_origins: str = "http://localhost:3000"
 
     nearai_api_key: SecretStr
-    nearai_model: str = "deepseek-ai/DeepSeek-V4.1-Flash-1017"
+    nearai_model: str = "Qwen/Qwen3.8-27B"
     nearai_base_url: str = "https://cloud-api.near.ai/v1"
+
+    agent_api_enabled: bool = False
+    agent_api_url: str = "https://api.demo.agentsonintents.com"
+    agent_api_key: SecretStr = SecretStr("")
+    agent_api_buyer_id: str = ""
+    agent_api_buyer_grant: SecretStr = SecretStr("")
+    agent_api_seller_id: str = ""
+    agent_api_seller_grant: SecretStr = SecretStr("")
+    agent_api_buyer_account: str = ""
+    agent_api_seller_account: str = ""
+    agent_api_asset: str = ""
 
     auth_rate_limit_per_minute: int = Field(default=60, ge=1, le=600)
     ask_rate_limit_per_minute: int = Field(default=10, ge=1, le=600)

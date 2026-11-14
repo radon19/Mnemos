@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from mnemos_broker.chain import ContractError
 from mnemos_broker.db import create_session_factory
 from mnemos_broker.models import ReadRequest
 
@@ -80,6 +81,8 @@ async def test_ask_happy_path_settles_receipt(
     assert body["receipt_hash"] is not None and len(body["receipt_hash"]) == 64
     assert body["tx_hash"] == "receipt-tx-1"
     assert body["attestation_summary"]["signature_kind"] == "provider_tee"
+    assert body["attestation_summary"]["model"] == "test-model"
+    assert body["attestation_summary"]["chat_id"] == "chat-0"
     assert body["attestation_summary"]["candidates_considered"] == 1
     assert fake_chain.receipts_recorded == [(1, body["receipt_hash"])]
     assert fake_chain.refunds == []
@@ -359,6 +362,25 @@ async def test_output_filter_withholds_and_refunds(
     assert fake_chain.refunds[0][1] == "E_OUTPUT_FILTER"
     row = await read_row(clean_db, 1)
     assert row is not None and row.status == "withheld"
+
+
+@pytest.mark.asyncio
+async def test_withheld_refund_failure_stays_sweepable(
+    settings, app_factory, fake_chain, fake_inference, agent_key, clean_db
+) -> None:
+    standard_setup(fake_chain)
+    await insert_vault_item(clean_db, seal(settings, text=LEAK_MEMORY))
+    fake_inference.queue(LEAK_ANSWER, LEAK_ANSWER)
+    fake_chain.failures["refund"] = ContractError("E_RPC_ERROR", "temporarily unavailable")
+    app, _, _ = app_factory(settings=settings, chain=fake_chain, inference=fake_inference)
+    async with http_for(app) as http:
+        response = await http.post("/v1/ask", json=ask_payload(agent_key))
+    assert response.status_code == 200
+    assert response.json()["answer"] is None
+    assert response.json()["refund_tx_hash"] is None
+    assert response.json()["error_code"] == "E_REFUND_PENDING"
+    row = await read_row(clean_db, 1)
+    assert row is not None and row.status == "refund_failed"
 
 
 @pytest.mark.asyncio

@@ -13,6 +13,7 @@ const WIDTHS = [320, 360, 390, 414, 480, 540, 640, 768, 834, 1024, 1280, 1440, 1
 
 const PATHS = [
   "/",
+  "/exchange",
   "/docs",
   "/setup",
   "/vault",
@@ -78,7 +79,7 @@ for (const width of WIDTHS) {
           const rect = element.getBoundingClientRect();
           if (rect.width === 0 || rect.height === 0) continue;
           const style = getComputedStyle(element);
-          const className = element.className;
+          const className = element.getAttribute("class") ?? "";
           if (className.includes("sr-only")) continue;
           if (style.overflowX === "auto" || style.overflowX === "scroll") continue;
           if (rect.right > limit + 1 || rect.left < -1) {

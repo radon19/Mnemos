@@ -101,30 +101,52 @@ def _attestation_summary(verified: Any) -> dict[str, Any]:
 class NearAiInferenceEngine:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self._client: InferenceClient | None = None
 
-    def _client_or_create(self) -> InferenceClient:
-        if self._client is None:
-            self._client = InferenceClient(
-                self.settings.nearai_api_key.get_secret_value(),
-                base_url=self.settings.nearai_base_url,
-                e2ee=True,
-            )
-        return self._client
+    def _new_client(self) -> InferenceClient:
+        # One client per completion: no hour-long attestation session can be reused.
+        # The SDK generates fresh 32-byte nonces and verifies gateway/model evidence
+        # before sending the encrypted prompt, retaining exact wire bytes itself.
+        return InferenceClient(
+            self.settings.nearai_api_key.get_secret_value(),
+            base_url=self.settings.nearai_base_url,
+            e2ee=True,
+            attestation_cache_time_to_live_ms=0,
+        )
 
     async def complete(
         self, *, system_prompt: str, user_prompt: str, max_tokens: int
     ) -> InferenceResult:
-        client = self._client_or_create()
+        client = self._new_client()
+        try:
+            return await self._complete_with_client(
+                client,
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                max_tokens=max_tokens,
+            )
+        finally:
+            await client.aclose()
+
+    async def _complete_with_client(
+        self, client: InferenceClient, *, system_prompt: str, user_prompt: str, max_tokens: int
+    ) -> InferenceResult:
+        preflight_started_at = datetime.now(UTC).isoformat(timespec="seconds")
         messages: list[ChatCompletionMessageParam] = [
             {"role": SYSTEM_ROLE, "content": system_prompt},
             {"role": USER_ROLE, "content": user_prompt},
         ]
+        extra_body: dict[str, Any] = {}
+        if self.settings.nearai_model.startswith("Qwen/Qwen3"):
+            # Qwen3 thinks by default. Hidden reasoning can exhaust the owner's
+            # small output budget before producing any answer. Keep that budget
+            # for the direct response, without increasing the grant's token cap.
+            extra_body["chat_template_kwargs"] = {"enable_thinking": False}
         request_projection = {
             "model": self.settings.nearai_model,
             "messages": messages,
             "max_tokens": max_tokens,
             "temperature": 0.2,
+            **extra_body,
         }
         try:
             completion = await client.chat.completions.create(
@@ -132,6 +154,7 @@ class NearAiInferenceEngine:
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=0.2,
+                extra_body=extra_body,
             )
         except Exception as error:
             raise InferenceError(E_INFERENCE_FAILED, "NEAR AI Cloud request failed") from error
@@ -145,6 +168,11 @@ class NearAiInferenceEngine:
 
         try:
             verified = await client.verify_response(completion.id)
+            if (
+                verified.signature_kind != "provider_tee"
+                or len(getattr(verified, "attestations", ())) != 1
+            ):
+                raise ValueError("a unique verified model-serving TEE signature is required")
         except Exception as error:
             raise InferenceError(
                 E_VERIFICATION_FAILED,
@@ -167,7 +195,13 @@ class NearAiInferenceEngine:
             signing_address=signing_address,
             signing_algo=str(signing_algo),
             signature_kind=str(verified.signature_kind),
-            attestation=_attestation_summary(verified),
+            attestation={
+                **_attestation_summary(verified),
+                "fresh_preflight": True,
+                "preflight_started_at": preflight_started_at,
+                "verification_policy": "unique-provider-tee-per-inference",
+                "receipt_hash_basis": "application-projections-not-sdk-wire-signature",
+            },
             request_bytes=canonical_json(request_projection),
             response_bytes=canonical_json(response_projection),
         )
@@ -187,9 +221,8 @@ class NearAiInferenceEngine:
             return False
 
     async def close(self) -> None:
-        if self._client is not None:
-            await self._client.aclose()
-            self._client = None
+        # Every per-inference SDK session closes before complete() returns.
+        pass
 
 
 def inference_error(error: InferenceError) -> MnemosError:

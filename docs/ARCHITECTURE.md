@@ -1,133 +1,171 @@
 # Architecture
 
-## The components
+## One answer, three independent responsibilities
 
-| Component | Language | Responsibility |
-| --- | --- | --- |
-| Mnemos contract | Rust, `near-sdk` 5.30 | Grants, caps, expiry, credit, receipts, refunds. It holds money and the access boundary. |
-| Broker | Python 3.12, FastAPI | The scope enforcer. Decrypts one scope, calls the model, filters the answer, settles the receipt. |
-| MCP server | TypeScript, `@modelcontextprotocol/sdk` 1.32 | The agent side: `ask_memory`, `list_grants`, `check_credit`. |
-| Web app | TypeScript, Next.js 16 | The owner side: landing, documentation, setup, vault, grants, activity, earnings, red-team. |
-| Crypto | TypeScript and Python | The same envelope format, verified byte for byte against shared vectors. |
+Mnemos separates knowledge authorization, private inference and payment. This
+keeps the trust model understandable and allows each boundary to improve
+without replacing the rest of the product.
 
-## The read path
-
-The order is the design. Nothing is decrypted before the money has moved.
-
-1. **The agent creates the request.** `request_read(owner, scope, q_hash)` on
-   the contract. The contract checks the grant, the scope, the daily cap and
-   the agent's prepaid credit, takes the price, and creates the request in
-   state `Approved`. A request that is never served expires after ten minutes
-   and the credit comes back.
-2. **The agent asks the broker.** It signs
-   `mnemos:v1:ask|{req_id}|{sha256(question)}|{nonce_hex}|{recipient}` with
-   its key and posts it to `/v1/ask`. The broker verifies the signature, then
-   verifies through `view_access_key` that the signing key belongs to the
-   agent account named in the request.
-3. **The broker claims the request.** The insert into `read_requests` uses
-   the request id as the primary key, so two concurrent calls for the same
-   request produce exactly one served read.
-4. **The broker decrypts one scope.** Items are selected by owner and scope,
-   decrypted with the broker's X25519 key, ranked by lexical relevance and
-   recency, and capped to a token budget. Plaintext never reaches a log.
-5. **The model answers.** The completion runs with `e2ee=True` against
-   `deepseek-ai/DeepSeek-V4.1-Flash-1017`. The broker calls
-   `verify_response` and refuses to use an answer that does not verify.
-6. **The output filter runs.** Any answer sharing a contiguous run of twelve
-   or more words with a decrypted item is rejected, including runs hidden in
-   base64 or hex. The broker retries once with a stricter prompt and refunds
-   if the second attempt still leaks.
-7. **The receipt is settled.** `receipt_hash = sha256(req_id|chat_id|
-   sha256(request_bytes)|sha256(response_bytes)|signing_address)` is written
-   with `record_receipt`. The chain stores the hash, the price and the scope,
-   never the content.
-
-## Storage
-
-The broker's database holds ciphertext and evidence, never plaintext.
-
-| Table | Holds |
+| Responsibility | Enforcement point |
 | --- | --- |
-| `vault_items` | Ciphertext, nonce, both wrapped DEKs, the content hash, the scope. |
-| `owner_accounts` | The owner's account id and the PBKDF2 salt. |
-| `read_requests` | The request id, the q_hash, the price, the status, the receipt and refund transaction hashes, the attestation summary, the latency and the error code. |
-| `auth_challenges` | The exact NEP-413 message, the nonce, the expiry and the single-use marker. |
-| `audit_events` | Identifiers and error codes for sign-in and settlement failures. |
+| Which expert knowledge may be used | The expert's grant and the owner-run broker's scope selection |
+| Whether a testnet read is authorized and funded | The NEAR contract |
+| Whether a model response has accepted private-inference evidence | NEAR AI Cloud SDK verification plus Mnemos' response policy |
+| What the mainnet buying wallet may spend | Owner-signed Agent API policy and runtime grant |
+| Whether a purchase can release an answer | Broker settlement checks and persistent request state |
 
-Prices are `numeric(78, 0)`, because a NEAR price is a u128 amount of
-yoctoNEAR and does not fit in a signed 64-bit integer.
+## Components
 
-Nothing grows without bound either. A retention job removes expired sign-in
-challenges after an hour, audit events after a month, deleted vault items after
-a month and read requests after a quarter. The chain keeps the receipt ring, so
-the history of a read never disappears, only the broker's copy of the
-bookkeeping.
-
-## The views
-
-`get_grant`, `get_request`, `credit_of`, `earnings_of`, `get_broker` and
-`recent_receipts` answer single questions. `grants_by_owner` answers the one
-the owner interface could not do without: it lists every grant an owner gave,
-so the Grants screen shows the same list in every browser and on chain.
-
-## The envelope
-
-```text
-item ciphertext        ciphertext || 16-byte tag, nonce stored separately
-owner-wrapped DEK      12-byte nonce || ciphertext || tag
-broker-wrapped DEK     32-byte ephemeral public || 12-byte nonce || ciphertext || tag
-```
-
-The item is sealed with AES-256-GCM under a random per-item data key. The
-owner wraps that key with a key derived from their passphrase
-(PBKDF2-HMAC-SHA256, 600000 iterations, a 16-byte salt per owner). The broker
-wraps the same key with HKDF-SHA256 over an X25519 exchange with the broker's
-public key. The AAD strings bind every wrap to the owner, the scope and the
-item id, so an envelope cannot be moved between scopes or owners.
-
-The TypeScript and Python implementations are pinned to the same byte layout
-by `packages/crypto-vectors/vectors.json`. Both re-encrypt every vector byte
-for byte and decrypt the other's output, so the browser and the broker always
-agree.
-
-## API surface
-
-| Endpoint | Who | What |
+| Component | Stack | Role |
 | --- | --- | --- |
-| `POST /v1/auth/challenge` | owner | A single-use NEP-413 challenge, five minute TTL. |
-| `POST /v1/auth/verify` | owner | Verifies the signature, checks key ownership, sets the session cookie. |
-| `GET /v1/broker/pubkey` | anyone | The broker's public key and its fingerprint. |
-| `POST /v1/vault/items` | owner | Stores an envelope the broker could open. |
-| `GET /v1/vault/items` | owner | Lists the owner's items. |
-| `GET /v1/vault/salt` | owner | The owner's KDF salt. |
-| `DELETE /v1/vault/items/{id}` | owner | Removes an item. |
-| `POST /v1/ask` | agent | The signed read request. |
-| `GET /v1/activity` | owner | The merged broker and chain read ledger. |
-| `GET /v1/activity/stream` | owner | The same ledger as server-sent events. |
-| `POST /v1/redteam/run` | owner | Starts the attack set as a background job and returns its id. |
-| `GET /v1/redteam/run/{job_id}` | owner | The state of a red-team job and, when it is done, the report. |
-| `GET /healthz`, `GET /readyz` | anyone | Liveness and readiness. |
+| Owner application | Next.js, TypeScript, React | Encrypt notes, manage grants, inspect evidence and run the guided Exchange. |
+| Mnemos contract | Rust, `near-sdk` | Hold testnet credit, authorize reads, escrow fees, settle receipts and handle refunds. |
+| Broker | Python, FastAPI | Authenticate requests, select/decrypt scope, rank context, verify inference and coordinate settlement. |
+| Storage | PostgreSQL, SQLAlchemy, Alembic | Store encrypted envelopes, request state and evidence. |
+| Agent integration | TypeScript MCP server and CLI | Expose `ask_memory`, `list_grants` and `check_credit`. |
+| Crypto package | TypeScript and Python | Share one envelope format, checked against interoperability vectors. |
+| Agent API adapter | Server-side HTTP client | Submit policy-bound Intents transfers and match finalized execution status. |
 
-Every error carries a stable code (`E_GRANT_REVOKED`, `E_SCOPE_DENIED`,
-`E_OUTPUT_FILTER`, …) and a request id. The MCP tools translate those codes
-into a sentence with the next action.
+## Testnet paid-read sequence
 
-## Deployment
+```mermaid
+sequenceDiagram
+    actor Expert
+    participant Agent as Agent / MCP
+    participant Chain as NEAR contract
+    participant Broker as Owner-run broker
+    participant Model as NEAR AI Cloud TEE
 
-```text
-docker compose up -d --build
+    Expert->>Chain: Grant scope, price, cap and expiry
+    Agent->>Chain: request_read(owner, scope, question commitment)
+    Chain-->>Agent: Approved request; fee escrowed
+    Agent->>Broker: Signed request, question and nonce
+    Broker->>Chain: Check request, grant and agent key
+    Note over Broker: Claim request once; decrypt permitted owner/scope
+    Broker->>Model: Fresh attestation verification, then E2EE completion
+    Model-->>Broker: Response and model signature
+    Note over Broker: Verify signature/evidence; apply output policy
+    Broker->>Chain: Settle receipt or refund failed read
+    Chain-->>Broker: Transaction result
+    Broker-->>Agent: Answer and evidence, or a refusal
 ```
 
-brings up Postgres 16, the broker and the web app. The broker container runs
-`alembic upgrade head` before it starts serving, and both services have
-health checks. The contract is separate: it is deployed to testnet with
-`./scripts/deploy-testnet.sh`, which is idempotent and prints the contract
-id.
+The contract checks the named grant, scope, expiry, read cap and credit before
+creating an approved request. The fee is reserved before decryption. Only the
+registered broker may settle it. The receipt commits to application evidence;
+it contains neither the notes nor the answer text.
 
-Rate limiting and the activity stream are local by default, because the
-compose file runs one broker. A deployment with more than one replica sets
-`RATE_LIMIT_BACKEND=postgres` and `ACTIVITY_BUS_ENABLED=true`, and both are
-then shared: one budget kept in the database, one activity stream carried
-over a Postgres channel. The shared budget fails open, so a read is never
-blocked because the limiter is down. This is recorded in `docs/SECURITY.md`
-and `docs/DECISIONS.md` (D-022).
+The broker validates the signed question commitment and key ownership, claims
+the request through a unique database record, and checks the grant again before
+loading scope data. Requests that are not served have refund/expiry recovery.
+Read-fee refunds do not imply that network gas is free.
+
+## A separate mainnet offer
+
+The Agent API path is an additional **0.01 USDC expertise offer**. It is not a
+conversion of testnet credit into mainnet value.
+
+1. The configured knowledge owner authorizes the offer through their session.
+2. The server accepts `expertise` only and binds a purchase ID to its question
+   and immutable payment terms.
+3. The Agent API checks the buyer's signed policy and runtime grant.
+4. The broker waits for a matching successful Intents transfer: buyer, asset,
+   amount, recipient, reference and settled intent identifier must agree.
+5. Only then does the same real inference/filtering implementation process the
+   permitted knowledge.
+6. An answer is released after its delivery state is persisted. Failed inference
+   or withheld output enters the refund path.
+
+**Current operating state:** mainnet wallets are intentionally unfunded. Real
+policy refusals are verified; successful mainnet purchase/refund behavior is
+covered by HTTP-fixture/real-Postgres tests and remains a live-activation milestone.
+
+## Recovery is part of the purchase
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending
+    pending --> paying
+    paying --> paid: Matching successful payment
+    paid --> served: Verified answer and durable delivery state
+    paid --> refund_pending: Inference or output-policy failure
+    refund_pending --> refunded: Confirmed refund
+    paying --> paying: Reconcile accepted operation
+    refund_pending --> refund_pending: Retry same refund operation
+```
+
+A dedicated PostgreSQL transaction-level advisory lock serializes one purchase
+ID. Separate commits persist the accepted operation identifier, paid state and
+refund intent before the next external side effect. A crash after an external
+refund cannot move that read back into inference.
+
+Retries keep the same external idempotency key. Once an operation is accepted,
+status recovery uses its stored identifier without requiring a fresh spending
+grant. Owner-authorized refund/reconciliation by ID does not require the original
+question or an old session cookie. Unfinished reads are listed separately from
+recent completed receipts.
+
+Answer plaintext is not saved for replay after a completed delivery. A reload
+can recover bookkeeping and unresolved money state, but not reconstruct an
+already delivered answer from storage.
+
+## Encryption and data lifetime
+
+Each note is encrypted with AES-256-GCM under a random per-item data-encryption
+key. That key has two independent wraps:
+
+- **Owner wrap:** PBKDF2-HMAC-SHA256 with 600,000 iterations and a per-owner salt,
+  followed by AES-256-GCM.
+- **Broker wrap:** ephemeral X25519 exchange, HKDF-SHA256 and AES-256-GCM.
+
+Authenticated metadata binds the envelope to its intended identity and context.
+The same byte layout is checked in the TypeScript and Python implementations
+using [shared vectors](../packages/crypto-vectors/vectors.json).
+
+| Stored data | Purpose |
+| --- | --- |
+| `vault_items` | Ciphertext, nonces, wrapped data keys, scope and content commitment. |
+| `owner_accounts` | Owner identifier and KDF salt. |
+| `read_requests` | Testnet request state, settlement/refund identifiers and inference evidence. |
+| `commerce_reads` | Immutable USDC terms, accepted operation IDs, payment/refund state and answer commitment. |
+| `auth_challenges` | Expiring, single-use sign-in challenges. |
+| `audit_events` | Operational identifiers and error codes. |
+
+Account, scope, timing and payment metadata is not a confidential transcript.
+Vault note plaintext, question text and answer text are not persisted as database
+columns. The broker does process selected plaintext in memory. Existing retention
+jobs cover expired challenges, audit events, deleted notes and testnet request
+records; a broader commerce retention/export policy belongs to production rollout.
+The contract's receipt ring is bounded, not an unlimited archival service.
+
+## API map
+
+| API | Caller | Purpose |
+| --- | --- | --- |
+| `/v1/auth/challenge`, `/v1/auth/verify` | Owner | NEP-413 sign-in and session creation. |
+| `/v1/broker/pubkey` | Public | Discover the encryption key and registration fingerprint. |
+| `/v1/vault/items`, `/v1/vault/salt` | Owner | Manage encrypted notes and owner salt. |
+| `/v1/ask` | Signed agent | Execute the approved testnet read. |
+| `/v1/activity`, `/v1/activity/stream` | Owner | Inspect the merged ledger and live updates. |
+| `/v1/commerce/status` | Configured owner | Inspect the Agent wallet, policy and unresolved purchases. |
+| `/v1/commerce/ask` | Configured owner | Authorize the fixed expertise offer under the buyer wallet policy. |
+| `/v1/commerce/refund` | Configured owner | Reconcile or refund an unresolved purchase by ID. |
+| `/v1/redteam/run` | Owner | Run the real-model attack set without an on-chain read fee. |
+| `/healthz`, `/readyz` | Public | Liveness and dependency readiness. |
+
+The broker's generated OpenAPI documentation is available locally at
+[localhost:8000/docs](http://localhost:8000/docs).
+
+## Deployment model
+
+Docker Compose runs the web application, broker and PostgreSQL on loopback.
+The broker applies Alembic migrations before serving. The NEAR contract is
+separately deployed to testnet. The guarded local signing routes require
+explicit demo flags, a local origin and the configured owner's authenticated
+session.
+
+This is an owner-operated laptop deployment. Public hosting, multi-owner
+onboarding and stronger broker isolation are deliberate next milestones, not
+implied properties of the Compose setup.
+
+[NEAR source map →](NEAR_INTEGRATION.md) · [Security →](SECURITY.md) · [Roadmap →](ROADMAP.md)

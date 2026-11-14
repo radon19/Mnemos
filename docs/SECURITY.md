@@ -1,159 +1,132 @@
-# Security
+# Security and trust
 
-Threat model, the mitigation for each threat, and what is still open.
+## Control stays with the knowledge owner
 
-## Assets
+Mnemos is built around explicit authority: the owner controls the vault and
+knowledge grants; the agent receives bounded access; the broker verifies the
+request and inference; NEAR records the economic outcome.
 
-| Asset | Where it lives | Who must not get it |
+This document describes the current implementation. The [roadmap](ROADMAP.md)
+shows how these boundaries can be strengthened next.
+
+## The trust boundaries
+
+| Boundary | Current mechanism | What it establishes |
 | --- | --- | --- |
-| Vault plaintext | The owner's browser, briefly in broker memory | The agent, the model host, a database dump |
-| The passphrase-derived key | Browser memory, one tab | Everyone else |
-| The broker's X25519 private key | The broker's environment | The agent, the owner, a database dump |
-| The agent's prepaid credit | The contract | Another agent, the owner |
-| The owner's earnings | The contract | The agent, a third party |
-| The receipt trail | The contract, the events | Nobody: it is public and content-free |
+| Browser → storage | Per-item AES-256-GCM encryption with separately wrapped data keys | The stored note body is ciphertext; owner decryption uses the passphrase-derived wrap. |
+| Agent → knowledge grant | Named NEAR account, scoped grant, expiry, price and read cap | New testnet requests must satisfy the expert's access terms. |
+| Agent runtime → account | Function-call key restricted to one contract and two methods | The reader does not need the account-management key in its runtime. |
+| Broker → model host | E2EE to NEAR AI Cloud with fresh verified attestation | Accepted model-hosting evidence is checked before the encrypted prompt is sent. |
+| Model → delivered answer | Required `provider_tee` response signature and one matching report | Gateway-only or ambiguous evidence is not accepted as model verification. |
+| Buyer → mainnet spending | Owner-signed Agent API policy and runtime grant | The API applies the configured asset, destination and spending controls. |
+| Payment → answer | Exact settlement matching, durable checkpoints and idempotency | Submission alone cannot authorize delivery; retry does not intentionally create a fresh charge. |
 
-## Threats
+## What the broker is trusted to do
 
-### A malicious agent
+The broker is **owner-run** and processes selected plaintext to answer a
+question. Its encryption key can open all notes wrapped to it. The production
+code selects owner and scope only after authorization, but a compromised broker
+could bypass that off-chain selection. The chain cannot prevent such decryption.
 
-**What it tries.** Read a scope it was not granted, read the same request
-twice, read the vault directly, spend the owner's credit, or drain its own
-credit quickly.
+The owner therefore chooses and trusts the broker deployment. NEAR AI's model
+TEE does not make the broker an enclave. Attested broker execution and sealed-key
+binding are the next isolation milestone in [the roadmap](ROADMAP.md#2-attested-broker-execution-reduce-trust-in-the-operator).
 
-**Mitigation.** The agent's key can only call `request_read`, and the
-contract checks the grant, the scope, the cap, the expiry and the credit
-before it creates anything. A read is served only when the request carries a
-signature from a key that `view_access_key` says belongs to the agent account
-in the request, and the signature covers the request id, the question, a
-nonce and the broker. The request id is the primary key of the served-read
-table, so a replay is rejected. The cap and the price bound the damage a
-stolen agent key can do.
+A compromised registered broker could also falsely settle an approved request.
+The receipt is an audit commitment to settlement, not an independent proof that
+useful inference occurred.
 
-**Residual.** An agent that holds a valid grant can ask narrow questions and
-learn facts. That is what the price and the cap are for.
+## What an answer and receipt prove
 
-### A malicious or compromised broker operator
+A successful testnet read provides two distinct kinds of evidence:
 
-**What it tries.** Read every scope, keep the plaintext, answer from memory
-instead of from the grant, or serve a request that was never paid for.
+1. **Inference evidence:** the broker's pinned SDK verifies hardware/deployment
+   evidence, nonce binding and the response signature. Mnemos additionally
+   requires the model-serving signature classification and an unambiguous
+   matching model report.
+2. **Settlement evidence:** the NEAR contract records a receipt commitment and
+   transfers the approved read fee to owner earnings.
 
-**Mitigation.** The broker is owner-run, and the owner chooses where it runs.
-The contract is the enforcement point: the broker cannot create a grant,
-cannot raise a cap, cannot change an expiry and cannot get an unpaid request
-served, because the contract charges before the broker is allowed to act. The
-receipt lets the owner audit which reads were served, when, by which agent,
-for which scope and for how much. The web app refuses to encrypt anything for
-a broker whose key fingerprint does not match the value registered on chain.
+The contract does not verify TEE quotes. The SDK's exact wire-signature checks
+are separate from the application's canonical-projection receipt hash.
+Accepted hardware, attestation infrastructure and SDK behavior remain trust
+assumptions. Deployment measurements are not a blanket audit of model behavior.
 
-**Residual.** A compromised broker can read the plaintext it decrypts and can
-lie about the answer it produced. It cannot forge the receipt of a read it did
-not pay for, and the audit trail shows the reads it claims to have served.
-Detecting a broker that lies about the *content* of an answer needs an
-independent re-run, which the red-team screen makes easy but does not
-automate.
+For the USDC offer, the application verifies the official Agent API execution
+status against the exact purchase. It does not independently verify that
+service's transparency-log proof. A confidential Intents settlement may have an
+intent identifier without a public mainnet explorer transaction.
 
-### A database leak
+## Access, revocation and answer disclosure
 
-**What it tries.** Read the notes out of the broker's database.
+A grant restricts which source category the broker may use. The agent's MCP
+interface returns the answer and evidence rather than a vault-dump capability.
+A useful answer still communicates facts and may contain short source phrases.
 
-**Mitigation.** The database holds ciphertext, nonces, wrapped keys, hashes,
-identifiers and error codes. There is no column that can hold a plaintext
-note, a question or an answer. The broker's private key is in the process
-environment, never in the database. An owner-wrapped key is useless without
-the passphrase; a broker-wrapped key needs the broker's X25519 private key.
+The output policy rejects supported long verbatim reproduction, including
+contiguous runs of twelve or more words and checked base64/hex forms. It retries
+once with a stricter prompt and withholds the answer if the policy still fails.
+Paraphrase, translation and repeated narrow questions remain outside the reach
+of a lexical guarantee. The red-team report identifies residual behavior instead
+of labeling every attack blocked.
 
-**Residual.** The database reveals *which* owner and *which* scope has *how
-many* items, and the timestamps of reads. That metadata is not protected.
+Revocation blocks future authorized access. It cannot erase an answer an agent
+already received, and it is not a guarantee that every already-started operation
+can be recalled. Cumulative disclosure policies and finer expert-defined answer
+rules are planned extensions.
 
-### Replay
+## Keys and sessions
 
-**What it tries.** Reuse a signature, a request or a challenge.
+- `.env` and `.secrets/` are ignored by Git. Shared examples contain placeholders.
+- The owner's management key and the setup wallet's signing key are not given to
+  the agent runtime. Agent API runtime uses scoped grant tokens.
+- The local NEAR reader key is restricted to `request_read` and `expire_request`
+  on the configured contract. Full-access keys are refused for agent reads.
+- The gas allowance must cover the protocol's upfront reservation as well as
+  actual execution. It is separate from prepaid read credit and the answer price.
+- Owner sign-in uses a single-use NEP-413 challenge. Requests and jobs are bound
+  to the authenticated owner; another owner's job cannot be read by guessing its ID.
+- Signing out or locking the vault remounts and clears owner query state,
+  including displayed answers and revealed note content.
 
-**Mitigation.** The agent signature covers the request id, the question
-digest, a fresh 32-byte nonce and the broker recipient, and the broker
-recomputes `q_hash = sha256(question || nonce)` and compares it with the
-value stored on chain. The read request id is consumed once, enforced by a
-primary key. The owner sign-in challenge is single use with a five minute
-TTL, and the stored message is the exact bytes the wallet displayed.
+The offline setup helper checks signer identity and signing standard, then
+trusts the official service's generated EIP-712 payload. Validating its domain
+and operation contents independently is a further setup-hardening opportunity.
+The runtime does not hold that owner signing key.
 
-**Residual.** A replayed *owner* session cookie is valid until it expires
-(the session is short lived and the cookie is HttpOnly, SameSite=Strict and
-signed).
+## Money and failure handling
 
-### Prompt injection
+Testnet read fees are reserved before decryption and settled by the registered
+broker. Failed/withheld reads follow refund recovery; a pending refund is not
+presented as completed. Network gas can still be spent on a failed transaction.
 
-**What it tries.** Put instructions in a memory item, or in the question, so
-the model ignores its instructions and dumps the vault.
+The USDC coordinator persists immutable payment terms and accepted operation
+identifiers before polling. A per-read database lock prevents concurrent work;
+durable refund intent prevents a crash from turning a refunded purchase into a
+free answer. Owner-authorized recovery by ID does not need the original question
+or the previous session secret.
 
-**Mitigation.** Memory and question are wrapped in fixed delimiters and any
-delimiter-like text inside them is escaped, so an item cannot close its own
-block. The system prompt states that the blocks are data, that instructions
-inside them are content rather than commands, and that the model must not
-encode, translate or list items. The output filter is the enforcement point:
-it runs on the answer, not on the prompt, and it does not care what the
-instructions were.
+The mainnet wallets are intentionally unfunded. Successful USDC payment/refund
+and USD-budget rejection are not claimed as live-verified. Their recovery
+behavior has deterministic HTTP tests with real Postgres.
 
-**Residual.** A sufficiently narrow question can still extract a fact. The
-filter is lexical; it does not understand meaning.
+## Operating envelope
 
-### Storage griefing on the chain
+The shipped rehearsal runs on one laptop with services bound to loopback. Local
+signing is explicitly enabled and checks origin, network and owner session. It
+is not intended to be exposed through a public tunnel as a hosted custody service.
 
-**What it tries.** Flood the contract with requests or grants so that storage
-cost or the state grows without bound.
+Rate limiting and activity distribution have shared-Postgres options, but these
+do not by themselves establish a production multi-owner deployment. Availability,
+key rotation, commerce retention/export, independent API proof verification and
+public hosting belong to the rollout milestones.
 
-**Mitigation.** The contract bounds everything: at most 32 grants per owner,
-at most 16 scopes per grant, a daily cap of at most 10,000 reads, at most 32
-pending reads per agent, a ring buffer of 50 receipts per owner and 512
-recent served request ids. Completed requests are removed from storage; the
-NEP-297 event log keeps the trail.
+## Inspect the evidence
 
-**Residual.** The agent can still pay for many reads, bounded by its own
-prepaid credit and by the grant cap.
+- [Verification results](VERIFICATION.md)
+- [Live judging evidence](JUDGING_EVIDENCE.json)
+- [NEAR integration and code references](NEAR_INTEGRATION.md)
+- [Future scope and milestone acceptance criteria](ROADMAP.md)
 
-### Stuck funds
-
-**What it tries.** Make a read fail after the agent paid, so the credit is
-lost; or make a withdrawal fail so the earnings are stuck.
-
-**Mitigation.** Every failure path in the broker calls `refund`. If the
-broker cannot record the request at all, it still refunds before reporting
-the error. If the request expires unused, `expire_request` returns the
-credit, and that call is permissionless. A failed withdrawal restores the
-balance and the owner can try again.
-
-**Residual.** An agent that creates a request and never calls `/v1/ask` keeps
-its credit until the request expires. The sweeper expires the requests the
-broker has seen; a request the broker never saw needs an indexer or the agent
-itself to call `expire_request`.
-
-## Operational notes
-
-- Secrets live in `.env` and `.secrets/`, both gitignored. `.env.example`
-  documents every variable. No secret is printed by any command; the demo and
-  the verification scripts print only public identifiers.
-- The broker sets `HttpOnly`, `SameSite=Strict` session cookies and signs
-  them with HMAC-SHA256.
-- Every request gets a request id that is returned in the error envelope and
-  in the logs, so an incident can be traced without logging payloads.
-- Logs are structured JSON with no plaintext fields.
-- The broker refuses request bodies above 32 KiB, and the vault enforces a
-  16 KiB item limit.
-- Rate limits are 60 sign-ins and 10 reads a minute by default, and 3
-  red-team runs a minute. With one broker they are kept in memory. A
-  multi-replica deployment sets `RATE_LIMIT_BACKEND=postgres` and every
-  replica then spends from one budget kept in the database; the shared
-  budget fails open, so a read is never blocked because the limiter is
-  down.
-- The activity stream is shared the same way: `ACTIVITY_BUS_ENABLED` carries
-  the events over a Postgres channel, so a read served by one replica
-  appears in the owner's ledger in every other replica.
-- Retention bounds the broker's tables: sign-in challenges are dropped after
-  an hour, audit events after a month, deleted vault items after a month and
-  read requests after a quarter.
-- The container images run as non-root users, and compose caps each service
-  at 768 MB and one CPU.
-- The demo signer is disabled unless the server has `DEMO_OWNER_SECRET_KEY`
-  and the client has `NEXT_PUBLIC_DEMO_MODE=true`. It exists so the flow can
-  be shown without a browser wallet, and it is labelled as a demo session in
-  the interface.
+Use the labeled sample notes for the demonstration. Their public sample
+passphrase is for those samples only.

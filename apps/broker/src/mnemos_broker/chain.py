@@ -297,24 +297,25 @@ class ChainClient:
                 401, E_KEY_NOT_FOUND, "the signing key does not belong to this account"
             ) from error
         permission = access_key.get("permission")
+        if require_function_call:
+            from .near.access import is_restricted_agent_key
+
+            if not is_restricted_agent_key(permission, self.settings.mnemos_contract_id):
+                raise MnemosError(
+                    403,
+                    E_KEY_NOT_FOUND,
+                    "Use a funded function-call key restricted to request_read and "
+                    "expire_request on the Mnemos contract; run make agent-key.",
+                )
+            return
         if isinstance(permission, str) and permission == "FullAccess":
             return
         if isinstance(permission, dict) and "FunctionCall" in permission:
             function_call = permission.get("FunctionCall")
             if isinstance(function_call, dict):
                 receiver = function_call.get("receiver_id")
-                if (
-                    require_function_call
-                    and isinstance(receiver, str)
-                    and receiver
-                    and receiver != self.settings.mnemos_contract_id
-                ):
-                    raise MnemosError(
-                        403,
-                        E_KEY_NOT_FOUND,
-                        "the signing key is not allowed to call the Mnemos contract",
-                    )
-            return
+                if isinstance(receiver, str) and receiver:
+                    return
         raise MnemosError(401, E_KEY_NOT_FOUND, "the signing key has an unsupported permission")
 
     async def ping(self) -> None:

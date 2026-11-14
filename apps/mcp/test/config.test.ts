@@ -22,6 +22,14 @@ describe("loadConfig", () => {
     expect(config.networkId).toBe("testnet");
   });
 
+  it("can reserve a default request within the runtime key's 0.05 NEAR allowance", () => {
+    const config = loadConfig(env());
+    // Protocol 85 purchases gas at at least 10^9 yoctoNEAR per gas even when
+    // the current burn price is lower. Include 2 Tgas for transaction fees.
+    const upfrontCost = (config.requestGas + 2_000_000_000_000n) * 1_000_000_000n;
+    expect(upfrontCost).toBeLessThanOrEqual(50_000_000_000_000_000_000_000n);
+  });
+
   it("derives the broker recipient from the broker url", () => {
     const config = loadConfig(env());
     expect(config.brokerRecipient).toBe("localhost:8000");

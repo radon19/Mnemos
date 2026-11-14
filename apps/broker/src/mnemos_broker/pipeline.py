@@ -190,6 +190,8 @@ class AskPipeline:
 
         latency_ms = max(1, int((monotonic() - started) * 1000))
         attestation = dict(generation.result.attestation)
+        attestation["model"] = self.settings.nearai_model
+        attestation["chat_id"] = generation.result.chat_id
         attestation["filter_retry"] = generation.attempts > 1
         attestation["candidates_considered"] = considered
 
@@ -207,7 +209,7 @@ class AskPipeline:
                 receipt_hash=None,
                 tx_hash=None,
                 refund_tx_hash=refund_tx,
-                error_code=E_OUTPUT_FILTER,
+                error_code=E_OUTPUT_FILTER if refund_tx else "E_REFUND_PENDING",
                 latency_ms=latency_ms,
             )
 
@@ -260,6 +262,31 @@ class AskPipeline:
             tx_hash=receipt_tx,
             latency_ms=latency_ms,
         )
+
+    async def answer_scope(self, *, owner: str, scope: str, question: str) -> dict[str, Any]:
+        """Generate a filtered answer after an alternate payment rail authorizes it.
+
+        Caller must authenticate the owner, enforce the offer scope and confirm
+        payment first. This invokes the same real inference/filter as /ask.
+        """
+        started = monotonic()
+        memories = await self._load_scope(owner, scope)
+        if not memories:
+            raise MnemosError(409, E_NO_MEMORY, "no readable memory exists for this scope")
+        selected, _ = rank_items(question, memories, max_answer_tokens=256)
+        if not selected:
+            raise MnemosError(409, E_NO_MEMORY, "no memory fits the context budget")
+        generation = await self._generate(question=question, items=selected, max_answer_tokens=256)
+        return {
+            "answer": None if generation.withheld else generation.result.answer,
+            "verified": True,
+            "attestation_summary": {
+                **generation.result.attestation,
+                "model": self.settings.nearai_model,
+                "chat_id": generation.result.chat_id,
+            },
+            "latency_ms": max(1, int((monotonic() - started) * 1000)),
+        }
 
     async def simulate_one(
         self,
@@ -505,7 +532,7 @@ class AskPipeline:
                     "refund failed",
                     extra={"req_id": request.req_id, "error_code": error.code},
                 )
-        status = final_status or ("refunded" if refund_tx else "refund_failed")
+        status = (final_status or "refunded") if refund_tx else "refund_failed"
         await self._mark(
             request.req_id,
             status=status,

@@ -1,0 +1,18 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["apps/web/src"],
+  "locale": "en",
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": ["Form", "Select/Listbox", "Date", "Scrollbar", "Toast", "CRUD"],
+  "ownership": { "Select/Listbox": "native", "Date": "typed" },
+  "requiredCommands": ["unit", "e2e", "accessibility"],
+  "commands": {
+    "unit": "make check",
+    "e2e": "make test-e2e",
+    "accessibility": "pnpm --filter @mnemos/web exec playwright test e2e/accessibility.spec.ts"
+  },
+  "evidence": {
+    "crudFullFlow": "apps/web/e2e/flow.spec.ts",
+    "failurePaths": "apps/web/e2e/exchange.spec.ts"
+  }
+}

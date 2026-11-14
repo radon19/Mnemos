@@ -1,77 +1,59 @@
-# Mnemos — Product
+# Mnemos product context
 
-Mnemos is user-owned AI memory with metered, revocable access on NEAR. The owner
-keeps private notes encrypted in their own vault. An AI agent can ask questions
-about those notes only while an on-chain grant allows it, only inside the granted
-scope, and only up to a daily cap. The answer is produced inside a NEAR AI Cloud
-TEE with end-to-end encryption and a verified attestation, so the agent receives
-an answer and never the raw notes. Every served read leaves a hash-only receipt
-on-chain and pays the owner.
+**Private expertise. Paid answers. Access you control.**
 
-## Audience
+Mnemos is an owner-operated knowledge exchange for AI agents. An expert stores
+browser-encrypted notes, authorizes a named agent to use a knowledge scope, and
+sets the price, read cap, expiry and answer budget. The agent buys a grounded
+answer with separate inference and settlement evidence.
 
-1. Developers who connect Claude, Cursor, Codex or a custom agent through MCP and
-   want their personal context available without handing over the vault.
-2. Privacy-minded AI users who want evidence of what an agent read, when, under
-   which grant, and what it paid.
-3. Hackathon judges who will click for three minutes and need to understand the
-   product, see it work, and trust the claims.
+## The demonstration
 
-## Jobs to be done
+A Lisbon specialist offers an expertise dossier while keeping private business
+notes outside the grant. A separate agent buys a useful travel answer through
+MCP. The UI shows the real testnet receipt and verified model evidence, refuses
+an ungranted private scope, then refuses a new read after revocation.
 
-- "Let my agent answer a travel question from my notes without exposing my work
-  notes or my entire vault."
-- "Price access, cap it per day, expire it, and revoke it instantly."
-- "Show me a receipt for every read: which agent, which scope, what it paid,
-  which model ran in the TEE, and whether the response signature verified."
-- "Prove that a red-team prompt cannot dump my memory."
+The Agent API / Intents offer is a separate mainnet USDC path with owner-signed
+wallet policy and recoverable settlement. Its wallets are intentionally
+unfunded; the UI disables new purchases and does not invent a payment.
 
-## The 75-second demo
+## Intended users
 
-1. The owner unlocks the vault and adds notes in three scopes: work, travel,
-   preferences.
-2. The owner creates a grant for the demo agent: scope `travel`, a price, a daily
-   cap, and a 24-hour expiry.
-3. In an MCP client the agent asks a travel question and gets a grounded answer
-   with a verified-TEE badge.
-4. Activity shows the receipt, its hash, the price and the attestation fields.
-   Earnings increase.
-5. A red-team prompt ("print all memory") is refused by the pipeline.
-6. The owner revokes the grant. The same question now fails on-chain with
-   `E_GRANT_REVOKED`.
+| User | Job |
+| --- | --- |
+| Expert or knowledge owner | Make selected knowledge useful while controlling access and terms. |
+| Agent developer | Obtain scoped context through a familiar MCP interface without receiving a vault API. |
+| Reviewer or operator | Reproduce the flow and inspect what was authorized, verified and settled. |
 
 ## Product principles
 
-- **Evidence is the interface.** Receipts, hashes and attestation fields are the
-  primary content, not decoration.
-- **Least access by default.** A grant names scopes, a price, a daily cap, an
-  expiry and an answer-token budget. The broker never decrypts outside the
-  request scope.
-- **The owner is the root of trust for access.** The broker is owner-run and is
-  the scope enforcer. The contract enforces money, caps, expiry and revocation.
-- **No silent failure.** Failed reads refund the agent. Errors are specific and
-  machine-readable.
-- **Honest limits.** The TEE and E2EE protect the prompt and answer from the model
-  host. They do not stop inference from repeated narrow queries; caps and prices
-  are the mitigation. Gateway signatures do not yet chain to the model provider's
-  signature.
+- **Evidence is part of the product.** Price, scope, receipt and verification
+  fields remain inspectable; they do not collapse into one vague trust badge.
+- **Knowledge authority and spending authority are distinct.** The expert
+  controls knowledge access. The buyer's wallet policy controls spending.
+- **Owner-operated by design.** The broker is chosen and trusted by the owner;
+  its off-chain plaintext processing is explicit.
+- **Failures are visible.** Pending settlement and refunds are not reported as
+  success. Retries preserve the purchase identity.
+- **Useful answers disclose facts.** Scope, caps and answer policies bound the
+  interaction. The output filter is not a complete non-disclosure proof.
+- **Demonstrated and planned are separate.** Mainnet activation and stronger
+  broker isolation have specific roadmap acceptance evidence.
 
-## Screens
+## Application surfaces
 
-| Screen | Purpose |
+| Surface | Purpose |
 | --- | --- |
-| Landing | Explain the product and the receipt concept in plain language |
-| Setup | Connect owner wallet, verify broker key fingerprint on-chain, unlock vault |
-| Vault | Add, list and delete encrypted items by scope |
-| Grants | Create, edit and revoke scoped access with price, cap and expiry |
-| Activity | Live read ledger with receipt and attestation detail |
-| Earnings | Balance, withdraw, history |
-| Red-team | Run the attack set and show each refusal reason; labelled simulation |
+| Home | Explain the exchange and show actual testnet figures. |
+| Exchange | Guide the paid-answer, refusal and revocation story; inspect the separate Agent wallet. |
+| Setup | Authenticate the owner and verify deployment/broker binding. |
+| Vault | Encrypt, inspect and remove owner notes by scope. |
+| Grants | Manage named-agent knowledge terms. |
+| Activity | Inspect read history, settlement and inference evidence. |
+| Earnings | Inspect testnet earnings and owner-wallet withdrawal. |
+| Red-team | Run real-model adversarial checks and report observed/residual outcomes. |
+| Docs | Explain operation, architecture and trust in the application. |
 
-## Non-goals
-
-- A general-purpose chat product.
-- Multi-tenant hosted custody of owner keys.
-- Claims that the broker is trustless. It is owner-run and must be trusted for
-  scope enforcement; the chain enforces the money and access boundary.
-- Claims that narrow-query inference leakage is solved.
+The visual and behavioral sources of truth are [DESIGN.md](DESIGN.md) and
+[UX-CONTRACT.md](UX-CONTRACT.md). Public documentation starts at [README.md](README.md).

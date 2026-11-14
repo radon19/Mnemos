@@ -1,144 +1,207 @@
-# Mnemos
+<p align="center">
+  <img src="apps/web/public/icon.svg" width="64" height="64" alt="Mnemos logo" />
+</p>
 
-User-owned AI memory with metered, revocable access on NEAR.
+<h1 align="center">Mnemos</h1>
+<p align="center"><strong>Private expertise. Paid answers. Access you control.</strong></p>
+<p align="center">Built on NEAR · Verified private AI · Policy-bound agent commerce</p>
+<p align="center">
+  <a href="#see-it-work">Demo</a> ·
+  <a href="docs/NEAR_INTEGRATION.md">NEAR integration</a> ·
+  <a href="docs/ARCHITECTURE.md">Architecture</a> ·
+  <a href="docs/VERIFICATION.md">Evidence</a> ·
+  <a href="docs/ROADMAP.md">Roadmap</a>
+</p>
 
-An owner stores encrypted notes in scopes. An MCP agent can ask grounded
-questions only through an on-chain grant that is scoped, priced, capped and
-revocable. Answers run inside a NEAR AI Cloud TEE with E2EE and verified
-attestation; the agent gets an answer, never the notes. Every read leaves a
-hash-only receipt on chain and pays the owner.
+---
 
-## Try it in five steps
+## Your knowledge can be useful without becoming someone else's notebook
 
-From a clean clone, with Docker, Node 22+, pnpm, Python 3.12+ and `uv`
-installed:
+AI agents need context that public models do not have: an expert's field notes,
+a team's internal knowledge, or a person's preferences. Sharing an entire vault
+gives away too much. A generic paywall gives the owner too little control.
 
-1. **Configure.** `cp .env.example .env`, then fill in `NEARAI_API_KEY`, the
-   four NEAR account ids and `BROKER_X25519_PRIVATE_KEY`. The deployed
-   testnet ids are already in `.env.example` as examples:
-   `make install`.
-2. **Start the stack.** `docker compose up -d --build`. Postgres, the broker
-   and the web app come up healthy; the broker runs its Alembic migrations on
-   start.
-3. **Open the ledger.** `open http://localhost:3000`. The Setup screen shows
-   the contract, the network and the broker fingerprint compared with the
-   value registered on chain.
-4. **Store a note.** On the Vault screen, unlock with a passphrase and add a
-   note in the `travel` scope. The browser seals it with
-   `@mnemos/crypto` before it is sent; the broker stores ciphertext only.
-   See: the item id, its content hash and a row in the vault table.
-5. **Run the demo.** `make demo` grants the demo agent one scope, asks a
-   question through the MCP server, prints the verified attestation and the
-   receipt hash, runs the red-team attack set, revokes the grant and shows
-   the same read being denied with `E_GRANT_REVOKED`.
+**Mnemos makes an answer the unit of exchange.** An expert encrypts their notes,
+authorizes a named agent to use a particular category, and sets the price and
+access terms. The agent buys a grounded answer. The expert receives payment and
+an auditable receipt—and can revoke future access.
 
-## Architecture
+> **Example:** A Lisbon specialist offers travel expertise while keeping private
+> business notes outside the grant. An agent pays to ask where a visitor should
+> stay. It receives a verified answer; an attempt to read the private category is
+> refused. After revocation, the same travel question is refused too.
+
+The demonstration uses clearly labeled fictional notes and real infrastructure.
+
+[![The Mnemos Exchange interface](docs/images/mnemos-exchange.png)](docs/DEMO.md)
+
+## See it work
+
+On the configured laptop:
+
+```bash
+make demo-ready
+```
+
+Open **[localhost:3000/exchange](http://localhost:3000/exchange)**.
+
+1. Start the local owner session and encrypt the sample knowledge.
+2. Grant expertise access: **0.001 testnet NEAR**, eight reads per UTC day,
+   a 24-hour expiry, and a 256-token answer budget.
+3. Ask a question. Inspect the answer, TEE evidence, and settlement transaction.
+4. Try the private scope, revoke access, and repeat the question.
+
+The laptop controls distinct owner and agent accounts. The guided flow uses the
+same `ask_memory` implementation as the MCP server. No browser wallet is needed
+for this local rehearsal; the regular wallet workflows remain available.
+
+**Starting from a fresh checkout?** Follow [SETUP.md](docs/SETUP.md) to supply your
+own credentials and testnet accounts. Private keys and API credentials are not
+included in the repository.
+
+[Demo walkthrough and narration →](docs/DEMO.md)
+
+## Why NEAR is essential
+
+| Product requirement | Integration in the critical path |
+| --- | --- |
+| The expert controls access and gets paid | A Rust NEAR contract checks grants, scope, price, read caps, expiry and prepaid credit; escrows the fee; and settles receipts or refunds. |
+| Sensitive context needs private inference | NEAR AI Cloud receives an E2EE request only after fresh attestation verification. The broker requires a model-serving TEE signature and one matching verified model report. |
+| The buying agent needs bounded authority | A separate Agent API offer uses owner-signed wallet policies, scoped runtime grants, destination rules and transfer limits. The local testnet reader uses a restricted function-call key. |
+| A submitted payment is not yet a completed purchase | The Intents path waits for an exact matching successful execution before decrypting expertise. Accepted operation IDs and refund transitions are persisted for recovery. |
+
+This is a layered integration: **NEAR enforces the exchange, NEAR AI protects
+inference, and Agent API governs the buyer's wallet.**
+
+[Source-level integration guide, endpoints and verification commands →](docs/NEAR_INTEGRATION.md)
+
+## What you can verify today
+
+| Capability | Delivery status |
+| --- | --- |
+| Browser-encrypted vault and cross-language envelope format | Implemented; shared TypeScript/Python vectors |
+| Scoped grants, paid reads, receipts, refunds and revocation | Real NEAR testnet path |
+| Fresh TEE attestation, E2EE and response-signature verification | Real NEAR AI Cloud calls; invalid-nonce rejection checked live |
+| Agent API wallet creation and owner-signed policies/grants | Provisioned through the official service |
+| Destination, per-transfer limit and revoked-grant refusals | Checked with real Agent API execution requests |
+| Mainnet USDC expertise purchases and recovery | Implemented; success, refund and crash/retry behavior covered by HTTP-fixture/real-Postgres tests; wallets intentionally unfunded |
+| USD-budget refusal and funded 1Click settlement | Next activation milestone; not claimed as live-verified |
+
+The mainnet wallet appears separately in Exchange and says **Funding needed**.
+Its new-purchase button is disabled while unfunded. Testnet balances are never
+presented as mainnet revenue.
+
+[Verification record →](docs/VERIFICATION.md) · [Machine-readable live checks →](docs/JUDGING_EVIDENCE.json)
+
+## The architecture
 
 ```mermaid
 flowchart LR
-    subgraph owner["Owner browser"]
-        W["Web app<br/>Next.js 16"]
-        M["MCP server<br/>@modelcontextprotocol/sdk"]
-    end
-
-    subgraph chain["NEAR testnet"]
-        C["Mnemos contract<br/>near-sdk 5, Rust"]
-        AI["NEAR AI Cloud<br/>TEE model"]
-    end
-
-    subgraph broker["Owner-run broker"]
-        B["FastAPI<br/>/v1/ask, /v1/vault, /v1/activity"]
-        D[("Postgres 16<br/>ciphertext only")]
-        K["X25519 broker key"]
-    end
-
-    W -->|"NEP-413 sign-in"| B
-    W -->|"seal note in the browser"| B
-    W -->|"view calls"| C
-    M -->|"request_read"| C
-    M -->|"signed /v1/ask"| B
-    B -->|"record_receipt, refund"| C
-    B -->|"E2EE completion"| AI
-    AI -->|"signed answer + attestation"| B
-    B --> D
-    K --> B
+    O[Knowledge owner] -->|Encrypt notes in browser| V[(Encrypted vault)]
+    O -->|Define access terms| C[NEAR contract]
+    A[AI agent / MCP] -->|Request paid scoped read| C
+    C -->|Approved request| B[Owner-run broker]
+    V -->|Granted scope| B
+    B -->|E2EE + fresh verified evidence| AI[NEAR AI Cloud TEE]
+    AI -->|Signed answer| B
+    B -->|Settle receipt or refund| C
+    B -->|Filtered answer + evidence| A
+    P[Agent API / Intents] -. Separate mainnet USDC offer .-> B
 ```
 
-The order matters: the contract charges the agent and creates the read
-request before the broker decrypts anything. A request that is not served is
-refunded.
+The broker checks authorization and payment before decrypting the permitted
+scope. It verifies inference, applies the output policy, and records settlement
+before releasing a successful answer.
 
-## NEAR technology used
+The USDC offer is a distinct payment rail with its own policy and receipts;
+it does not debit testnet credit or pretend to create a testnet receipt.
 
-| Piece | What it is |
+[Detailed flows, storage and recovery →](docs/ARCHITECTURE.md)
+
+## Designed for ownership, with explicit boundaries
+
+The owner chooses and operates the broker. Its key can decrypt notes wrapped to
+it, so **the broker remains trusted**. The TEE protects the model-hosting boundary;
+it does not turn the broker into an enclave.
+
+A contract receipt proves settlement recorded by the registered broker, while
+model attestation and signatures provide separate inference evidence. Authorized
+answers can reveal facts. The lexical output filter reduces long verbatim
+reproduction; it is not a complete disclosure-prevention system. Revocation stops
+future access and cannot retract answers already delivered.
+
+These boundaries drive the next stage: attested broker execution, cumulative
+query policies, independent payment-proof verification and mainnet activation.
+
+[Security and trust →](docs/SECURITY.md) · [Future scope →](docs/ROADMAP.md)
+
+## Built for existing agents
+
+The MCP server exposes three tools:
+
+| Tool | Purpose |
 | --- | --- |
-| `near-sdk` 5.30 | The Rust contract: grants, caps, expiry, credit, receipts, refunds. |
-| `near-workspaces` 0.24 | Sandbox tests for the contract, including every negative path. |
-| `near-api-js` 7.4 | Wallet transactions and view calls in the MCP server and the web app. |
-| `@hot-labs/near-connect` 0.12 | The wallet connection recommended by the NEAR documentation. |
-| NEAR AI Cloud `nearai-inference-sdk` 0.3 | Chat completions with `e2ee=True` and model attestation verification. |
-| FastNEAR testnet RPC | `https://test.rpc.fastnear.com` for view calls and transactions. |
+| `ask_memory` | Buy a scoped answer and receive its verification and settlement evidence. |
+| `list_grants` | Inspect available scopes, price, expiry and remaining reads. |
+| `check_credit` | Read the agent's prepaid testnet credit. |
 
-## Trust model in three sentences
+It supports stdio and Streamable HTTP. Connection examples are included for
+[Claude Code](examples/claude-code.mcp.json) and [Cursor](examples/cursor.mcp.json).
+This is Mnemos' own MCP server.
 
-The broker is owner-run and is the scope enforcer: it decrypts only the scope
-a grant names, and the owner is the root of trust for that boundary. The
-model host cannot read the prompt or the answer, because the completion runs
-with end-to-end encryption inside a TEE whose attestation the broker verifies
-before it uses the answer. What the system does **not** stop is inference
-leakage through repeated narrow questions, which is why every grant has a
-price and a daily cap, and why the red-team screen reports residual risk
-instead of claiming a guarantee.
-
-The long version is in [`docs/TRUST_MODEL.md`](docs/TRUST_MODEL.md); the
-threat model is in [`docs/SECURITY.md`](docs/SECURITY.md). The running app
-carries the same explanation at `/docs`, and the landing page says what the
-project does in two sentences before it shows a figure.
-
-## Repository
-
-| Path | What it holds |
-| --- | --- |
-| `contracts/mnemos` | The Rust contract, its unit tests and the sandbox suite. |
-| `apps/broker` | The FastAPI broker, its Alembic migrations and the pytest suite. |
-| `apps/mcp` | The MCP server, the `mnemos-agent` CLI and the client examples. |
-| `apps/web` | The Next.js app: landing, setup, vault, grants, activity, earnings, red-team. |
-| `packages/crypto` | The TypeScript envelope encryption, mirrored by the Python package. |
-| `packages/crypto-vectors` | Shared vectors that both languages must reproduce byte for byte. |
-| `docs` | Architecture, trust model, security, decisions, verification, design review. |
-
-## Commands
+## Run and verify
 
 ```bash
-make install     # Node, Python and Rust dependencies
-make check       # static checks and unit tests for every language
-make test-e2e    # contract sandbox, broker integration tests, Playwright
-make demo        # the scripted end-to-end demo against testnet
-make up          # docker compose up for postgres, broker and web
+make install          # Install the pinned project dependencies
+make check            # Static checks and unit tests across all packages
+make test-e2e         # Contract sandbox, real Postgres and browser workflows
+make doctor           # Diagnose the configured laptop deployment
+make judging-check    # Fresh AI, nonce rejection, keys and Agent API refusals
+make record-demo      # Record/assert the actual browser demonstration
 ```
 
-## Testnet deployment
+Live inference consumes NEAR AI Cloud credits. `make test-e2e` includes live
+red-team browser checks and can take several minutes. The slow sandbox
+UTC-day rollover test remains explicitly opt-in.
 
-| | |
+For the additional Agent wallet:
+
+```bash
+make agent-api-setup   # Provision or renew service credentials and signed policies
+make agent-api-check   # Exercise the real policy refusals
+```
+
+Mainnet funding is an explicit separate action. It is not required for the
+working testnet demonstration and is currently left off by choice.
+
+## Documentation
+
+| Guide | What it answers |
 | --- | --- |
-| Contract | `mnemos-contract-76badc8e.testnet` |
-| Owner | `mnemos-owner-76badc8e.testnet` |
-| Agent | `mnemos-agent-76badc8e.testnet` |
-| Broker | `mnemos-broker-76badc8e.testnet` |
-| Broker key fingerprint | `f15d7141fd619dd65cc7fac29cb5a3a11d642aaa47f6a00f757bfedf9e6eb0a4` |
+| [Setup](docs/SETUP.md) | How to reproduce the project with your own credentials. |
+| [Demo](docs/DEMO.md) | What to show, say and test during the demonstration. |
+| [NEAR integration](docs/NEAR_INTEGRATION.md) | Where each NEAR technology is used and how to verify it. |
+| [Architecture](docs/ARCHITECTURE.md) | How requests, encryption, settlement and recovery work. |
+| [Security](docs/SECURITY.md) | What is enforced and where trust remains. |
+| [Roadmap](docs/ROADMAP.md) | How the prototype develops into a broader knowledge economy. |
+| [Verification](docs/VERIFICATION.md) | Test results, live evidence and reproducible checks. |
+| [Submission](docs/SUBMISSION.md) | Prepared hackathon description, demo post and submission checklist. |
 
-The evidence for every claim above is in
-[`docs/VERIFICATION.md`](docs/VERIFICATION.md).
+## Repository map
 
-## Built during the window
+```text
+apps/web/              Next.js dashboard, guided Exchange and evidence views
+apps/broker/           FastAPI broker, encrypted storage and payment coordination
+apps/mcp/              Agent tools, CLI and MCP transports
+contracts/mnemos/      Rust NEAR contract and sandbox tests
+packages/crypto/       Browser/Node envelope encryption
+packages/crypto-vectors/ Shared interoperability vectors
+scripts/               Setup, deployment, diagnostics and live verification
+```
 
-All code in this repository was written during the NEAR HACKATHON 2026
-window, between 11 November and 14 November 2026.
+**Hackathon tracks:** Privacy & Private AI, AI Security & Defense, Agent Economy.
 
-**Sibling project.** This project is independent of *Agent Bureau*. The two
-projects share no code, no infrastructure and no team; they are separate
-entries in the hackathon.
+**Sibling disclosure:** Mnemos is independent of *Agent Bureau*. They share no
+code, infrastructure or team and are separate entries.
 
-## Licence
-
-MIT. See [`LICENSE`](LICENSE).
+**License:** [MIT](LICENSE).

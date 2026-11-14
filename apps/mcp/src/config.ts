@@ -23,7 +23,9 @@ const envSchema = z.object({
   MNEMOS_BROKER_RECIPIENT: z.string().min(3).optional(),
   MNEMOS_POLL_INTERVAL_MS: z.coerce.number().int().min(100).max(10_000).default(500),
   MNEMOS_POLL_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(120_000).default(30_000),
-  MNEMOS_REQUEST_GAS: z.coerce.bigint().min(30_000_000_000_000n).default(100_000_000_000_000n),
+  // These pure-state calls fit within 30 Tgas. A 100 Tgas reservation exceeds
+  // the restricted runtime key's 0.05 NEAR allowance at the purchase-price floor.
+  MNEMOS_REQUEST_GAS: z.coerce.bigint().min(30_000_000_000_000n).default(30_000_000_000_000n),
   MNEMOS_HTTP_PORT: z.coerce.number().int().min(1).max(65_535).default(3_000),
 });
 

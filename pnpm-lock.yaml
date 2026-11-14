@@ -211,6 +211,9 @@ importers:
       '@mnemos/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
+      '@mnemos/mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@tanstack/react-query':
         specifier: 5.107.1
         version: 5.107.1(@types/react@19.3.0)(react@19.3.1)

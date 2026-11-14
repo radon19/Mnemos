@@ -109,7 +109,7 @@ export default function EarningsPage(): React.ReactNode {
             </p>
           </div>
 
-          <form
+          <form noValidate
             className="space-y-3 border-t border-rule pt-6"
             onSubmit={(event) => {
               event.preventDefault();

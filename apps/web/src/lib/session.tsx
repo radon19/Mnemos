@@ -97,9 +97,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }): Re
     setError(null);
     try {
       const response = await fetch("/api/auth/demo", { method: "POST" });
-      const payload = (await response.json()) as { account?: string; error?: string };
+        const payload = (await response.json()) as { account?: string; error?: string; message?: string };
       if (!response.ok || payload.account === undefined) {
-        throw new Error(payload.error ?? "the demo signer is not available");
+        throw new Error(payload.error ?? payload.message ?? "the demo signer is not available");
       }
       setAccount(payload.account);
       setDemo(true);

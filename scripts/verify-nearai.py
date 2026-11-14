@@ -33,7 +33,9 @@ def api_key(settings: Settings) -> str:
     secret = ROOT / ".secrets" / "nearai_api_key"
     if secret.exists():
         return secret.read_text(encoding="utf-8").strip()
-    raise SystemExit("no NEAR AI API key: set NEARAI_API_KEY or write .secrets/nearai_api_key")
+    raise SystemExit(
+        "no NEAR AI API key: set NEARAI_API_KEY or write .secrets/nearai_api_key"
+    )
 
 
 async def main() -> int:
@@ -79,8 +81,8 @@ async def main() -> int:
         "signature_kind": result.signature_kind,
         "signing_address": result.signing_address,
         "signing_algo": result.signing_algo,
-        "request_sha256": hashlib.sha256(result.request_bytes).hexdigest(),
-        "response_sha256": hashlib.sha256(result.response_bytes).hexdigest(),
+        "request_projection_sha256": hashlib.sha256(result.request_bytes).hexdigest(),
+        "response_projection_sha256": hashlib.sha256(result.response_bytes).hexdigest(),
         "answer": result.answer,
         "attestation": result.attestation,
     }

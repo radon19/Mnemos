@@ -147,11 +147,19 @@ async def test_send_error_extracts_log_code(settings) -> None:
 @pytest.mark.asyncio
 async def test_access_key_permissions(settings) -> None:
     chain, fake = client(settings)
-    await chain.verify_account_key("agent.testnet", "ed25519:key", require_function_call=True)
+    # Owner authentication may use a wallet's management key.
+    await chain.verify_account_key("owner.testnet", "ed25519:key", require_function_call=False)
+    with pytest.raises(Exception) as error:
+        await chain.verify_account_key("agent.testnet", "ed25519:key", require_function_call=True)
+    assert getattr(error.value, "code", None) == E_KEY_NOT_FOUND
 
     fake.access_key = {
         "permission": {
-            "FunctionCall": {"receiver_id": settings.mnemos_contract_id, "method_names": []}
+            "FunctionCall": {
+                "receiver_id": settings.mnemos_contract_id,
+                "method_names": ["request_read", "expire_request"],
+                "allowance": "50000000000000000000000",
+            }
         }
     }
     await chain.verify_account_key("agent.testnet", "ed25519:key", require_function_call=True)
@@ -159,6 +167,42 @@ async def test_access_key_permissions(settings) -> None:
     fake.access_key = {
         "permission": {"FunctionCall": {"receiver_id": "other.testnet", "method_names": []}}
     }
+    with pytest.raises(Exception) as error:
+        await chain.verify_account_key("agent.testnet", "ed25519:key", require_function_call=True)
+    assert getattr(error.value, "code", None) == E_KEY_NOT_FOUND
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "permission",
+    [
+        {"FunctionCall": {}},
+        {"FunctionCall": None},
+        {"FunctionCall": {"receiver_id": "mnemos-contract.testnet", "method_names": []}},
+        {
+            "FunctionCall": {
+                "receiver_id": "mnemos-contract.testnet",
+                "method_names": ["withdraw_credit"],
+            }
+        },
+        {
+            "FunctionCall": {
+                "receiver_id": "mnemos-contract.testnet",
+                "method_names": ["request_read", "withdraw_credit"],
+            }
+        },
+        {
+            "FunctionCall": {
+                "receiver_id": "mnemos-contract.testnet",
+                "method_names": ["request_read"],
+                "allowance": "0",
+            }
+        },
+    ],
+)
+async def test_agent_key_rejects_unbounded_or_malformed_permissions(settings, permission) -> None:
+    chain, fake = client(settings)
+    fake.access_key = {"permission": permission}
     with pytest.raises(Exception) as error:
         await chain.verify_account_key("agent.testnet", "ed25519:key", require_function_call=True)
     assert getattr(error.value, "code", None) == E_KEY_NOT_FOUND

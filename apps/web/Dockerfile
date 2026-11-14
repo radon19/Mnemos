@@ -37,6 +37,7 @@ ENV NEXT_PUBLIC_BROKER_URL=$NEXT_PUBLIC_BROKER_URL \
 WORKDIR /app
 COPY . .
 RUN pnpm --filter @mnemos/crypto build \
+  && pnpm --filter @mnemos/mcp build \
   && pnpm --filter @mnemos/web build
 
 FROM node:26-alpine AS runner

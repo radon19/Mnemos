@@ -25,12 +25,12 @@ import {
   storeSalt,
 } from "@/lib/vault";
 
-const SCOPES = ["travel", "health", "work", "preferences"];
+import { KNOWLEDGE_SCOPES as SCOPES } from "@/lib/scopes";
 
 export default function VaultPage(): React.ReactNode {
   const queryClient = useQueryClient();
   const { status, account, unlocked, passphrase, unlock } = useSession();
-  const [scope, setScope] = useState(SCOPES[0] ?? "travel");
+  const [scope, setScope] = useState<string>(SCOPES[0]);
   const [text, setText] = useState("");
   const [passphraseInput, setPassphraseInput] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -161,7 +161,7 @@ export default function VaultPage(): React.ReactNode {
           </h2>
 
           {unlocked ? null : (
-            <form
+            <form noValidate
               className="space-y-3 rounded-2xl bg-sunken p-4"
               onSubmit={(event) => {
                 event.preventDefault();
@@ -193,7 +193,7 @@ export default function VaultPage(): React.ReactNode {
             </form>
           )}
 
-          <form
+          <form noValidate
             className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
@@ -226,7 +226,7 @@ export default function VaultPage(): React.ReactNode {
                   setText(event.target.value);
                 }}
                 placeholder="My flight to Lisbon is on 14 March at 09:15."
-                className="rounded-xl border border-rule bg-sunken p-3.5 text-body outline-none focus:border-accent"
+                className="resize-none rounded-xl border border-rule bg-sunken p-3.5 text-body outline-none focus:border-accent"
               />
             </label>
 

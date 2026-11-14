@@ -3,8 +3,8 @@
 > This direction replaces the first one (a left rail of hairline rules over
 > archival paper). It was rewritten after the owner asked for a redesign based
 > on a marketing reference they supplied: a light page lit from behind, one
-> vivid accent, a floating navigation bar, a headline built around a real
-> number, and a row of figure cards. The product truth did not change: the
+> vivid accent, a floating navigation bar, a large centered headline
+> and a row of figure cards. The product truth did not change: the
 > evidence is still the content, and every figure on the page is read from the
 > chain when the page loads.
 
@@ -16,9 +16,9 @@ sits on top of it as white cards with soft, layered shadows. Evidence is
 printed on those cards: receipt hashes, attestation fields, prices, scopes,
 timestamps. Nothing floats without a reason.
 
-The reference offered a big number and a row of country cards. Mnemos uses the
-same move with the same discipline: the headline number is the owner's real
-earnings, and the cards are the system's real figures.
+The reference offered a prominent headline and a row of country figures.
+Mnemos uses its product promise for the headline and actual testnet activity
+for the cards. Small prototype balances are not presented as real revenue.
 
 ## Typography
 
@@ -54,7 +54,7 @@ never the only signal: every status also has a word and a mark.
 --accent     oklch(0.55 0.24 292)     brand accent, the headline figure
 --accent-ink oklch(0.46 0.22 292)    accent text on a light tint
 --accent-soft oklch(0.955 0.028 292) accent tint
---verified   oklch(0.52 0.14 158)    verified state
+--verified   oklch(0.49 0.14 158)    verified state; AA on success notice tint
 --destructive oklch(0.54 0.19 25)     destructive state
 ```
 
@@ -83,15 +83,30 @@ than blank — and it never carries meaning.
 
 ## Layout
 
+The Exchange surface extends this same visual identity: paired owner/agent
+workspaces, a sequential progress row, and a real answer/receipt below them.
+It uses existing Button, Notice, StatusMark, Hash and EvidenceBlock owners.
+The native dialog confirms revocation with protected keyboard focus. The
+navigation collapses below 1280px to accommodate Exchange without crowding.
+Runtime tokens live in `apps/web/src/app/globals.css`; Tailwind's inline
+theme maps their semantic names directly. No separate palette is introduced.
+
+The Exchange page also contains a distinct mainnet USDC purchase section,
+using the same cards, notices, status marks and evidence component. Mainnet
+balance and payment evidence never appear as testnet earnings. The shared
+native dialog has a purchase variant and unique accessible IDs. An unfunded
+wallet disables purchases; ambiguous settlement retains the same purchase ID.
+
 - A floating navigation bar sits at the top of the viewport: a white pill with
   a hairline border and a soft shadow, holding the wordmark, the section links
   and one dark pill for the primary action. It is sticky.
-- Below 1024px the bar collapses: the section links move into a disclosure
+- Below 1280px the bar collapses: the section links move into a disclosure
   panel under the bar, and the owner block moves with them.
-- The landing page centres its hero, then opens into wide grids: four figure
-  cards, three promise cards, five step cards, three limit cards and one
-  receipt block. It says what the project does in two sentences before it
-  shows a figure, and the closing call to action links to `/docs`.
+- The landing page centers its globe-backed headline inside a raised white
+  panel with four live figure cards. A plain explanatory strip follows, then
+  ordered steps, a real receipt, actual outputs and explicit trust limits.
+  The primary action opens the working demo, and documentation remains easy
+  to reach.
 - The documentation page is held to the same standard as the app: a left
   contents rail, measured prose, definition lists for the contract calls and
   the endpoints, and the same honest limits section. It is reachable from the
@@ -109,8 +124,9 @@ than blank — and it never carries meaning.
 
 ## Components
 
-- **Wordmark:** a rounded ink square with a lighter band at the top — a ledger
-  sheet seen from above.
+- **Wordmark:** a clear geometric M inside a rounded ink tile. The tile and
+  glyph adapt to the selected light/dark theme. The navbar, landing seal and
+  favicon share the same monogram; CSS cut-out placeholders are not used.
 - **Figure card:** a label, a large tabular number, and a note that says where
   the number came from. A figure that cannot be read says so instead of
   showing an example.
@@ -158,3 +174,19 @@ text contrast. Verified at 390, 768 and 1440 pixels with axe-core and
 Playwright: 36 tests, no violations. A separate responsive suite walks every
 screen at thirteen widths from 320 to 1920 pixels and fails on sideways
 scrolling, clipped text or a touch target under 30 pixels.
+
+
+## Reference refinement — 14 November 2026
+
+The owner supplied the white/violet globe landing reference again and asked
+for a closer visual match. The marketing page now uses a raised white sheet
+over a quiet gray stage, a soft orthographic globe, large centered two-line
+type, a dark pill action, and four inset live metric cards. The existing
+application screens, fonts, color tokens and working workflows are retained.
+The outer violet orb and fine outline shapes follow the supplied composition.
+
+Marketing figures intentionally use the display family with tabular numerals;
+application balances and hashes continue to use the evidence mono. The globe
+is decorative public-domain Natural Earth geometry, not an adoption map. No
+customer, revenue or country figures are invented. The user requested no
+commits; these refinements remain uncommitted with the earlier work.

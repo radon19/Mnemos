@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 class Job:
     id: str
     kind: str
+    owner: str | None = None
     status: str = "running"
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     finished_at: datetime | None = None
@@ -51,8 +52,10 @@ class JobRegistry:
     def get(self, job_id: str) -> Job | None:
         return self._jobs.get(job_id)
 
-    async def run(self, kind: str, work: Callable[[], Awaitable[dict[str, Any]]]) -> Job:
-        job = Job(id=uuid.uuid4().hex, kind=kind)
+    async def run(
+        self, kind: str, work: Callable[[], Awaitable[dict[str, Any]]], *, owner: str | None = None
+    ) -> Job:
+        job = Job(id=uuid.uuid4().hex, kind=kind, owner=owner)
         self._jobs[job.id] = job
         self._prune()
 
@@ -61,12 +64,14 @@ class JobRegistry:
                 result = await work()
                 job.result = result
                 job.status = "done"
-            except Exception as error:
+            except Exception:
                 job.status = "failed"
-                job.error = str(error)
+                job.error = "The background run failed. Check service health and try again."
                 logger.warning("job failed", extra={"job": job.id, "kind": kind})
             finally:
                 job.finished_at = datetime.now(UTC)
+                self._tasks.pop(job.id, None)
+                self._prune()
 
         self._tasks[job.id] = asyncio.create_task(runner(), name=f"mnemos-job-{job.id}")
         return job

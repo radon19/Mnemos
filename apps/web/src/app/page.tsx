@@ -4,16 +4,16 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import { QuoteCards, type QuoteCard } from "@/components/QuoteCards";
-import { StatCards, type StatCard } from "@/components/StatCards";
+import { type StatCard } from "@/components/StatCards";
+import { LandingHero } from "@/components/LandingHero";
 import { StatusMark } from "@/components/StatusMark";
-import { brokerUrl, contractId, nearNetwork } from "@/lib/config";
 import { formatNear, formatTimestamp, truncateHash } from "@/lib/format";
 import { fetchChainStats } from "@/lib/landing";
 
 const PROMISES = [
   {
-    title: "Your notes never leave your browser",
-    body: "Each note is encrypted here, on your machine, with a key derived from your passphrase. The broker stores ciphertext it can only open for the scope you granted.",
+    title: "Encrypted before upload",
+    body: "Your browser encrypts every note. The database stores ciphertext. Your owner-run broker decrypts the granted scope when answering an authorized question.",
   },
   {
     title: "Access is scoped, priced and revocable",
@@ -21,14 +21,14 @@ const PROMISES = [
   },
   {
     title: "Every read leaves a receipt",
-    body: "The contract stores a hash of the request and the answer, the scope and the price. You can check what was read, when, by whom and for how much.",
+    body: "The contract records a receipt hash, the scope and the price. You can check which scope was used, by whom and for how much. The receipt contains no transcript.",
   },
 ];
 
 const STEPS = [
   {
     title: "You encrypt a note",
-    body: "The browser seals it with a key derived from your passphrase and wraps a copy for the broker's public key. Plaintext never leaves the device.",
+    body: "The browser seals it with a key derived from your passphrase and wraps a copy for the broker's public key. Only ciphertext is uploaded to the vault.",
   },
   {
     title: "You grant one agent a scope",
@@ -58,8 +58,8 @@ const LIMITS = [
     body: "A lexical filter stops bulk reproduction, not a single fact asked in a hundred different ways. Daily caps and prices are the mitigation.",
   },
   {
-    title: "The gateway signature does not chain to the model",
-    body: "NEAR's gateway signs the response, but that signature is not yet a proof that the provider's own key produced the answer. The attestation is the evidence.",
+    title: "A receipt is evidence of settlement",
+    body: "The registered broker verifies model evidence and records settlement. The chain does not independently verify inference or prove that the broker followed its policy.",
   },
 ];
 
@@ -116,7 +116,7 @@ export default function LandingPage(): React.ReactNode {
     });
   }
   quotes.push({
-    source: "The contract, after a revoke",
+    source: "Expected contract refusal after revocation",
     quote: "Smart contract panicked: E_GRANT_REVOKED: grant has been revoked",
     detail: "the next read fails on chain, by design",
   });
@@ -134,65 +134,15 @@ export default function LandingPage(): React.ReactNode {
 
   return (
     <div className="space-y-20 pb-16">
-      <section className="mx-auto max-w-[52rem] pt-4 text-center sm:pt-8">
-        <p className="inline-flex items-center gap-2 rounded-full border border-rule bg-surface px-3.5 py-1.5 text-caption text-muted shadow-[var(--shadow-card)]">
-          <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full bg-accent" />
-          <span className="numeric">{nearNetwork}</span>
-          <span aria-hidden="true">·</span>
-          <span className="numeric">{contractId}</span>
-        </p>
+      <LandingHero cards={cards} ready={data !== undefined} failed={stats.isError} />
 
-        <h1 className="mx-auto mt-7 max-w-[22ch] text-display text-ink">
-          Your AI agent can read your notes.{" "}
-          <span className="text-accent">You set the terms.</span>
-        </h1>
-
-        <p className="mx-auto mt-5 max-w-[44rem] text-lede text-muted">
-          Mnemos keeps your private notes encrypted in your own vault. You choose which
-          scope an agent may read, what each read costs, and when access stops. The
-          contract charges the agent first, the broker answers from that one scope, and
-          every read leaves a receipt you can check on chain.
-        </p>
-
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/setup"
-            className="inline-flex min-h-11 items-center rounded-full bg-ink px-6 text-body text-canvas transition-opacity hover:opacity-90"
-          >
-            Open the ledger
-          </Link>
-          <Link
-            href="/docs"
-            className="inline-flex min-h-11 items-center rounded-full border border-rule bg-surface px-6 text-body text-ink transition-colors hover:border-ink"
-          >
-            How it works
-          </Link>
-        </div>
-
-        <p className="mt-4 text-caption text-muted">
-          {data === undefined
-            ? "Reading the contract."
-            : `The broker runs at ${brokerUrl}. The figures below are read from ${contractId} when this page loads.`}
-        </p>
-      </section>
-
-      <section aria-label="What it does" className="grid gap-3 md:grid-cols-3">
+      <section aria-label="What it does" className="grid gap-8 border-b border-rule px-2 pb-10 md:grid-cols-3">
         {PROMISES.map((promise) => (
-          <article key={promise.title} className="card px-5 py-5">
+          <article key={promise.title}>
             <h2 className="text-lede text-ink">{promise.title}</h2>
-            <p className="mt-2 max-w-[42ch] text-body text-muted">{promise.body}</p>
+            <p className="mt-3 max-w-[42ch] text-body text-muted">{promise.body}</p>
           </article>
         ))}
-      </section>
-
-      <section aria-labelledby="live-figures" className="space-y-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 id="live-figures" className="text-title">
-            What the deployment has done so far
-          </h2>
-          <StatusMark kind="verified" label="Read from the contract" />
-        </div>
-        <StatCards cards={cards} />
       </section>
 
       <section aria-labelledby="how-a-read-happens" className="space-y-5">
@@ -230,7 +180,7 @@ export default function LandingPage(): React.ReactNode {
               <div className="contents">
                 <dt className="field-label border-b border-rule py-3">Status</dt>
                 <dd className="border-b border-rule py-3">
-                  <StatusMark kind="pending" label="Reading the contract" />
+                  <StatusMark kind="pending" label={stats.isError ? "Contract unavailable" : data ? "No receipts recorded yet" : "Reading the contract"} />
                 </dd>
               </div>
             ) : (
@@ -238,7 +188,7 @@ export default function LandingPage(): React.ReactNode {
                 <div className="contents">
                   <dt className="field-label border-b border-rule py-3">Status</dt>
                   <dd className="border-b border-rule py-3">
-                    <StatusMark kind="verified" label="Served · verified" />
+                    <StatusMark kind="verified" label="Served · recorded on chain" />
                   </dd>
                 </div>
                 <div className="contents">
@@ -284,7 +234,7 @@ export default function LandingPage(): React.ReactNode {
           <h2 id="what-it-returns" className="text-title">
             What the system actually returns
           </h2>
-          <StatusMark kind="verified" label="Real output" />
+          <span className="text-caption text-muted">Live receipt and expected contract behavior</span>
         </div>
         <QuoteCards quotes={quotes} />
       </section>

@@ -50,7 +50,7 @@ async def run(
         )
         return report.model_dump()
 
-    job = await services.jobs.run("redteam", work)
+    job = await services.jobs.run("redteam", work, owner=claims.account)
     return JobStarted(
         job_id=job.id,
         status=job.status,
@@ -59,10 +59,12 @@ async def run(
 
 
 @router.get("/run/{job_id}", response_model=JobStatus)
-async def status(job_id: str, request: Request) -> JobStatus:
+async def status(
+    job_id: str, request: Request, claims: SessionClaims = Depends(require_owner)
+) -> JobStatus:
     services = get_services(request)
     job = services.jobs.get(job_id)
-    if job is None:
+    if job is None or job.owner != claims.account:
         raise MnemosError(404, E_NOT_FOUND, "no such job")
     return JobStatus(
         job_id=job.id,

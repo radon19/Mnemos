@@ -99,6 +99,25 @@ async def test_access_key_is_read_from_the_node() -> None:
     assert access_key["nonce"] == 7
 
 
+@pytest.mark.asyncio
+@respx.mock
+async def test_access_key_nested_rpc_error_is_not_an_existing_key() -> None:
+    respx.post(RPC_URL).mock(
+        return_value=rpc_result(
+            {
+                "error": "access key ed25519:missing does not exist while viewing",
+                "logs": [],
+            }
+        )
+    )
+    client = NearClient(RPC_URL)
+    try:
+        with pytest.raises(NearRpcError, match="does not exist"):
+            await client.view_access_key("agent.testnet", "ed25519:missing")
+    finally:
+        await client.close()
+
+
 def _node_responses(request) -> Response:
     """Answers the access key query first, then the transaction."""
     body = json.loads(request.content.decode())

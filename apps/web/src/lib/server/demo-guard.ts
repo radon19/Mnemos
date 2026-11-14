@@ -7,12 +7,13 @@ export class DemoError extends Error {
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const MAX_BODY_BYTES = 8192;
+type DemoEnvironment = Record<string, string | undefined>;
 
-export function demoBrokerUrl(env: NodeJS.ProcessEnv = process.env): string {
+export function demoBrokerUrl(env: DemoEnvironment = process.env): string {
   return (env.BROKER_URL ?? env.NEXT_PUBLIC_BROKER_URL ?? "http://localhost:8000").replace(/\/+$/u, "");
 }
 
-export function requireLocalDemo(request: Request, env: NodeJS.ProcessEnv = process.env): void {
+export function requireLocalDemo(request: Request, env: DemoEnvironment = process.env): void {
   if (env.MNEMOS_LOCAL_DEMO !== "true" || env.NEXT_PUBLIC_DEMO_MODE !== "true") {
     throw new DemoError(404, "E_DEMO_DISABLED", "Local demo is disabled. Run make demo-ready on your laptop.");
   }
@@ -26,20 +27,23 @@ export function requireLocalDemo(request: Request, env: NodeJS.ProcessEnv = proc
   const forwardedFor = request.headers.get("x-forwarded-for");
   // Next supplies x-forwarded-* even without a proxy. Permit its local or
   // Docker bridge source; never accept a public forwarding hop.
-  const internalHop = (ip: string): boolean => /^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/u.test(ip.trim());
-  if (!LOOPBACK.has(url.hostname) || !LOOPBACK.has(hostUrl.hostname) || url.host !== host ||
+  const internalHop = (ip: string): boolean => /^(127\.0\.0\.1|::1|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/u.test(ip.trim().replace(/^::ffff:/u, ""));
+  // Next standalone constructs Request.url from its bind address, not Host.
+  // Only this exact internal address is accepted; browser Host stays loopback.
+  const standaloneUrl = env.HOSTNAME === "0.0.0.0" && url.hostname === "0.0.0.0" && url.port === hostUrl.port;
+  if ((!LOOPBACK.has(url.hostname) && !standaloneUrl) || !LOOPBACK.has(hostUrl.hostname) || (!standaloneUrl && url.host !== host) ||
       request.headers.has("forwarded") || (forwardedHost !== null && forwardedHost !== host) ||
       (forwardedFor !== null && !forwardedFor.split(",").every(internalHop)) ||
       request.headers.get("sec-fetch-site") === "cross-site") {
     throw new DemoError(403, "E_LOCAL_ONLY", "Open this demo directly at http://localhost:3000 on this laptop.");
   }
-  if (request.method !== "GET" && request.headers.get("origin") !== url.origin) {
+  if (request.method !== "GET" && request.headers.get("origin") !== hostUrl.origin) {
     throw new DemoError(403, "E_ORIGIN", "This action must come from the local Mnemos page. Reload it and try again.");
   }
 }
 
 export async function requireDemoOwner(
-  request: Request, env: NodeJS.ProcessEnv = process.env, fetcher: typeof fetch = fetch,
+  request: Request, env: DemoEnvironment = process.env, fetcher: typeof fetch = fetch,
 ): Promise<void> {
   const sessionCookie = (request.headers.get("cookie") ?? "").split(";").map((part) => part.trim()).find((part) => part.startsWith("mnemos_session="));
   if (!sessionCookie) throw new DemoError(401, "E_OWNER_SESSION", "Start the local owner session first.");

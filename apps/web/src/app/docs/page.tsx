@@ -11,10 +11,11 @@ const SECTIONS = [
   { id: "trust", label: "The trust model" },
   { id: "contract", label: "The contract" },
   { id: "broker", label: "The broker" },
+  { id: "commerce", label: "Agent wallet" },
   { id: "mcp", label: "The MCP server" },
   { id: "web", label: "The web app" },
   { id: "run", label: "Running it" },
-  { id: "limits", label: "The honest limits" },
+  { id: "limits", label: "Future scope" },
 ];
 
 function Section({
@@ -49,13 +50,13 @@ export default function DocsPage(): React.ReactNode {
       <header className="rule pb-6">
         <p className="field-label">Documentation</p>
         <h1 className="mt-2 max-w-[20ch] text-display text-ink">
-          How Mnemos works, and what it does not promise
+          How private knowledge becomes a paid answer
         </h1>
         <p className="mt-4 max-w-[62ch] text-lede text-muted">
-          Everything here is true of the running deployment: the contract on{" "}
+          Explore the running testnet exchange: the contract on{" "}
           <span className="numeric">{nearNetwork}</span> at{" "}
           <span className="numeric">{contractId}</span>, the broker, the MCP server
-          and this interface.
+          and this interface. The mainnet Agent wallet is a separate, explicitly unfunded option.
         </p>
       </header>
 
@@ -106,7 +107,7 @@ export default function DocsPage(): React.ReactNode {
               <li>
                 <strong className="text-ink">The agent asks.</strong> It creates a read
                 request on chain with a hash of the question and a nonce. The contract
-                charges the price, checks the grant, the scope, the cap and the expiry,
+                checks the grant, scope, cap and expiry, then reserves the read fee
                 and creates the request.
               </li>
               <li>
@@ -124,7 +125,7 @@ export default function DocsPage(): React.ReactNode {
                 <strong className="text-ink">The model answers.</strong> The completion
                 runs with <code>e2ee=true</code>. The broker calls{" "}
                 <code>verify_response</code> and discards any answer whose attestation
-                does not verify. There is no unverified fallback.
+                does not verify. Every inference uses fresh preflight evidence and requires a model-serving TEE signature with one matching report. There is no unverified fallback.
               </li>
               <li>
                 <strong className="text-ink">The filter runs.</strong> An answer that
@@ -138,32 +139,32 @@ export default function DocsPage(): React.ReactNode {
                   sha256(req_id|chat_id|sha256(request_bytes)|sha256(response_bytes)|
                   signing_address)
                 </code>{" "}
-                is written with <code>record_receipt</code>. Any failure path refunds.
+                is written with <code>record_receipt</code>. Failed reads enter refund recovery; a pending refund is not presented as completed.
               </li>
             </ol>
           </Section>
 
           <Section id="trust" title="The trust model">
-            <p className="text-ink">What is guaranteed:</p>
+            <p className="text-ink">Enforced access and evidence:</p>
             <ul className="list-disc space-y-2 pl-5">
               <li>
-                The model host cannot read the prompt or the answer: the completion is
-                end to end encrypted and produced inside an attested TEE.
+                The prompt is end to end encrypted to an attested model environment,
+                with nonce, quote and response-signature verification.
               </li>
               <li>
-                The agent cannot read anything you did not grant, and cannot read a
-                request twice.
+                Accepted requests are restricted to the granted scope and protected
+                against replay by the request identity and signed commitment.
               </li>
               <li>
-                The contract charges before the broker decrypts, so a failed read is
-                refunded rather than paid for.
+                The contract reserves the read fee before the broker decrypts.
+                Successful settlement pays the owner; failed reads follow refund recovery.
               </li>
               <li>
                 You can check every read: the receipt holds the scope, the price, the
                 time and a hash.
               </li>
             </ul>
-            <p className="text-ink">What is not:</p>
+            <p className="text-ink">Explicit architecture choices:</p>
             <ul className="list-disc space-y-2 pl-5">
               <li>
                 The broker sees the plaintext it decrypts. It is owner-run for that
@@ -174,9 +175,10 @@ export default function DocsPage(): React.ReactNode {
                 and prices are the mitigation, not the filter.
               </li>
               <li>
-                NEAR&apos;s gateway signature does not yet chain to the model
-                provider&apos;s signature, so the attestation is the evidence rather
-                than a single end-to-end proof.
+                A chain receipt proves settlement recorded by the registered broker.
+                It does not independently prove model execution or that a malicious
+                broker followed its scope policy. Inspect the actual signature kind
+                and attestation fields rather than inferring verification from a receipt.
               </li>
             </ul>
           </Section>
@@ -278,10 +280,16 @@ export default function DocsPage(): React.ReactNode {
             </p>
           </Section>
 
+          <Section id="commerce" title="Policy-bound agent commerce">
+            <p>The separate Agent API offer uses owner-signed wallet policies and scoped runtime grants. It prices one expertise answer at 0.01 mainnet USDC and waits for a matching successful Intents payment before decrypting knowledge.</p>
+            <p>Real destination, per-transfer limit and revoked-grant refusals are verified. The wallets are intentionally unfunded: successful USDC purchase/refund and USD-budget rejection are not claimed as live-verified. The Exchange page reports Funding needed.</p>
+            <p>Accepted operation IDs and refund intent are persisted for recovery. Owner-authorized recovery by purchase ID does not require the original question or the old session secret.</p>
+          </Section>
+
           <Section id="mcp" title="The MCP server">
             <p>
-              Any MCP client can read the vault. The server signs the request with the
-              agent key and never holds a key that can read the vault directly.
+              An authorized MCP client can ask scoped questions. The server signs with
+              the restricted agent key; it does not expose the owner vault-management API.
             </p>
             <dl>
               <Row
@@ -370,31 +378,16 @@ make demo                 # the whole flow against testnet`}
             </p>
           </Section>
 
-          <Section id="limits" title="The honest limits">
+          <Section id="limits" title="Future scope">
+            <p>The prototype establishes a controlled exchange first. Each next milestone strengthens an explicit boundary.</p>
             <ul className="list-disc space-y-2 pl-5">
-              <li>
-                The output filter is lexical. It stops a bulk reproduction and a
-                verbatim quote; it does not stop a paraphrase, and it reports that
-                honestly rather than claiming coverage.
-              </li>
-              <li>
-                The rate limiter and the activity stream are local by default,
-                because the compose file runs one broker. A multi-replica
-                deployment sets <code>RATE_LIMIT_BACKEND=postgres</code> and
-                <code>ACTIVITY_BUS_ENABLED=true</code> to share both.
-              </li>
-              <li>
-                The model host cannot read the prompt, but the broker can, because it
-                has to decrypt in order to answer.
-              </li>
-              <li>
-                A read that is never asked for holds the agent&apos;s credit until
-                the request expires; the MCP server returns it when it notices.
-              </li>
+              <li><strong className="text-ink">Attested broker execution.</strong> The current owner-run broker processes plaintext. Sealed keys and an attested broker would reduce the trust required in its operator.</li>
+              <li><strong className="text-ink">Disclosure-aware policies.</strong> The lexical filter reduces supported long verbatim reproduction. Cumulative query budgets and semantic evaluations would extend coverage to repeated facts, paraphrase and translation.</li>
+              <li><strong className="text-ink">Mainnet activation.</strong> The Agent wallet policy is inspectable before funding. The next evidence milestone is a small funded sale, confirmed refund and funded USD-budget refusal.</li>
+              <li><strong className="text-ink">Portable commerce evidence.</strong> Independent execution-proof verification and exportable evidence bundles would extend the current exact settlement checks.</li>
+              <li><strong className="text-ink">An expertise network.</strong> Independent buyer/expert onboarding, discovery and operational isolation would extend the current laptop offer into a broader service.</li>
             </ul>
-            <p className="flex flex-wrap items-center gap-3">
-              <StatusMark kind="verified" label="Every claim here is checked by a test" />
-            </p>
+            <p className="flex flex-wrap items-center gap-3"><StatusMark kind="pending" label="Current verification and milestone acceptance evidence are documented in the repository" /></p>
           </Section>
         </div>
       </div>

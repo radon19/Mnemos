@@ -1,0 +1,57 @@
+{
+  "recorded_at": "2026-11-14T21:54:36.092Z",
+  "network": "testnet",
+  "source": "real browser, real NEAR testnet and NEAR AI; no mocked responses",
+  "contract": "mnemos-contract-76badc8e.testnet",
+  "owner": "mnemos-owner-76badc8e.testnet",
+  "agent": "mnemos-agent-76badc8e.testnet",
+  "read_id": 17,
+  "price_yocto": "1000000000000000000000",
+  "status": "served",
+  "verified_by_broker": true,
+  "receipt_hash": "1dfe9fc6fee8f124215d7d914475684579227009d724815224fab3db5a4b3c69",
+  "receipt_tx_hash": "6NoExocw3Mhh3E4dB1bK5nwSB69RnkoabtrjEUDVKoiV",
+  "attestation_summary": {
+    "signature_kind": "provider_tee",
+    "signer": {
+      "signing_address": "89154a43a47684742c3d1753252bb6f49f61da9d8c84fc9b1def2df130cb2d93",
+      "signing_algo": "ed25519"
+    },
+    "tcb_status": "UpToDate",
+    "advisory_ids": [],
+    "deployment": {
+      "app_compose_sha256": "e8416a02d6f7ce47baaa52e3925b934fd30834b04fc9086b363db9b1d12c729d",
+      "os_image_hash": "91fd5d69ccee3e5ea4f2aeb8c9b632c4358c4ecfc29ba1aa6fb1e402af209829",
+      "compose_hash": "e8416a02d6f7ce47baaa52e3925b934fd30834b04fc9086b363db9b1d12c729d",
+      "compose_manager_verified": true
+    },
+    "deployment_provenance": "not_checked",
+    "verified_at": "2026-11-14T21:54:58+00:00",
+    "gpu_evidence": "verified",
+    "model_attestations": 1,
+    "fresh_preflight": true,
+    "preflight_started_at": "2026-11-14T21:54:48+00:00",
+    "verification_policy": "unique-provider-tee-per-inference",
+    "receipt_hash_basis": "application-projections-not-sdk-wire-signature",
+    "model": "Qwen/Qwen3.8-27B",
+    "chat_id": "11d621003d9e427d9b7dea21e34783ac",
+    "filter_retry": false,
+    "candidates_considered": 1
+  },
+  "observed_contract_denials": [
+    "E_GRANT_REVOKED",
+    "E_SCOPE_DENIED"
+  ],
+  "console_errors": [],
+  "sample_content": true,
+  "recording": "artifacts/demo/mnemos-demo-captioned.mp4",
+  "recording_duration_seconds": 51.72,
+  "mainnet_wallet": {
+    "network": "mainnet",
+    "funded": false,
+    "successful_purchase_live_verified": false,
+    "note": "Displayed the actual intentionally unfunded wallet; no mainnet purchase requested.",
+    "available_usdc_atomic": "0"
+  },
+  "trust_boundary": "The owner-run broker verifies inference. The contract records settlement and access rules; it does not independently verify the model."
+}

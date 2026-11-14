@@ -63,12 +63,22 @@ def info(text: str) -> None:
 def load_accounts() -> dict[str, Any]:
     path = ROOT / ".secrets" / "accounts.json"
     if not path.exists():
-        raise SystemExit("missing .secrets/accounts.json; run scripts/deploy-testnet.sh first")
+        raise SystemExit(
+            "missing .secrets/accounts.json; run scripts/deploy-testnet.sh first"
+        )
     data: dict[str, Any] = json.loads(path.read_text())
+    runtime = ROOT / ".secrets" / "agent_runtime_key.json"
+    if not runtime.exists():
+        raise SystemExit(
+            "Run make agent-key first; the agent must use a restricted runtime key."
+        )
+    data["agent"]["secret_key"] = json.loads(runtime.read_text())["secret_key"]
     return data
 
 
-async def wait_for_broker(client: httpx.AsyncClient, timeout_seconds: int = 120) -> None:
+async def wait_for_broker(
+    client: httpx.AsyncClient, timeout_seconds: int = 120
+) -> None:
     """Wait until the broker is ready, so `make demo` can start the stack."""
     deadline = time.monotonic() + timeout_seconds
     last = "no answer"
@@ -137,7 +147,9 @@ async def store_note(client: httpx.AsyncClient, accounts: dict[str, Any]) -> str
         "ciphertext_b64": base64.b64encode(envelope.ciphertext).decode(),
         "nonce_b64": base64.b64encode(envelope.nonce).decode(),
         "wrapped_dek_owner_b64": base64.b64encode(envelope.wrapped_dek_owner).decode(),
-        "wrapped_dek_broker_b64": base64.b64encode(envelope.wrapped_dek_broker).decode(),
+        "wrapped_dek_broker_b64": base64.b64encode(
+            envelope.wrapped_dek_broker
+        ).decode(),
         "content_hash": envelope.content_hash,
         "owner_salt_b64": base64.b64encode(owner_salt).decode(),
     }
@@ -183,7 +195,9 @@ async def ask(accounts: dict[str, Any], question: str) -> tuple[int, dict[str, A
         "MNEMOS_AGENT_ACCOUNT": accounts["agent"]["account_id"],
         "MNEMOS_AGENT_KEY": accounts["agent"]["secret_key"],
         "MNEMOS_BROKER_URL": BROKER_URL,
-        "MNEMOS_BROKER_RECIPIENT": BROKER_URL.replace("http://", "").replace("https://", ""),
+        "MNEMOS_BROKER_RECIPIENT": BROKER_URL.replace("http://", "").replace(
+            "https://", ""
+        ),
         "NEAR_RPC_URL": RPC_URL,
     }
     node = shutil.which("node")
@@ -225,12 +239,29 @@ async def show_receipts(accounts: dict[str, Any]) -> None:
 
 async def run_redteam(client: httpx.AsyncClient) -> None:
     response = await client.post("/v1/redteam/run", json={"scope": SCOPE})
-    if response.status_code != 200:
-        info(f"the red-team run failed: {response.text}")
-        return
-    report = response.json()
+    if response.status_code != 202:
+        raise SystemExit(
+            f"the red-team run could not start (HTTP {response.status_code})"
+        )
+    job_id = response.json()["job_id"]
+    deadline = time.monotonic() + 240
+    while True:
+        response = await client.get(f"/v1/redteam/run/{job_id}")
+        if response.status_code != 200:
+            raise SystemExit(
+                f"the red-team status failed (HTTP {response.status_code})"
+            )
+        job = response.json()
+        if job["status"] == "done":
+            report = job["result"]
+            break
+        if job["status"] == "failed":
+            raise SystemExit("the red-team run failed; check broker health")
+        if time.monotonic() >= deadline:
+            raise SystemExit("the red-team run timed out; inspect the Red-team screen")
+        await asyncio.sleep(2)
     info(f"{len(report['attacks'])} attacks against {report['items_considered']} items")
-    info(f"model {report['model']} · simulation only, nothing is charged")
+    info(f"model {report['model']} · real AI attack run; no on-chain read fee; cloud credits apply")
     for attack in report["attacks"]:
         info(f"{attack['outcome']:9s} · {attack['label']}")
         info(f"           {attack['reason']}")
@@ -274,7 +305,9 @@ async def main() -> int:
     info(f"verified: {answer['verified']}")
     attestation = answer.get("attestation_summary") or {}
     info(f"signature kind: {attestation.get('signature_kind')}")
-    info(f"signing address: {attestation.get('signer', {}).get('signing_address', 'unknown')}")
+    info(
+        f"signing address: {attestation.get('signer', {}).get('signing_address', 'unknown')}"
+    )
     info(f"TCB status: {attestation.get('tcb_status')}")
     info(f"receipt hash: {answer['receipt_hash']}")
     info(f"receipt transaction: {answer['tx_hash']}")
@@ -298,7 +331,11 @@ async def main() -> int:
 
     heading("9. the demo note is removed again")
     removed = await client.delete(f"/v1/vault/items/{item_id}")
-    info("note deleted" if removed.status_code == 204 else f"could not delete: {removed.text}")
+    info(
+        "note deleted"
+        if removed.status_code == 204
+        else f"could not delete: {removed.text}"
+    )
 
     await client.aclose()
     print("\n\033[1mDemo complete.\033[0m")

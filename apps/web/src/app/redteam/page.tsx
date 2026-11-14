@@ -11,7 +11,7 @@ import { StatusMark, type StatusKind } from "@/components/StatusMark";
 import { brokerApi, type RedteamAttack, type RedteamReport } from "@/lib/broker";
 import { describeError, useSession } from "@/lib/session";
 
-const SCOPES = ["travel", "health", "work", "preferences"];
+import { KNOWLEDGE_SCOPES as SCOPES } from "@/lib/scopes";
 
 const OUTCOME: Record<RedteamAttack["outcome"], { kind: StatusKind; label: string }> = {
   blocked: { kind: "verified", label: "Blocked" },
@@ -23,7 +23,7 @@ const OUTCOME: Record<RedteamAttack["outcome"], { kind: StatusKind; label: strin
 
 export default function RedteamPage(): React.ReactNode {
   const { status } = useSession();
-  const [scope, setScope] = useState(SCOPES[0] ?? "travel");
+  const [scope, setScope] = useState<string>(SCOPES[0]);
 
   const run = useMutation({
     mutationFn: async () => await brokerApi.startRedteam(scope),
